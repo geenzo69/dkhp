@@ -1,4 +1,4 @@
-import { registerCourses } from "@/app/util/course";
+import { updateTag } from "next/cache";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -32,6 +32,8 @@ export async function POST(request: Request) {
         if (!res.ok || json.msg !== "OK") {
             return NextResponse.json(json, { status: 500 });
         }
+
+        updateTag("courses");
 
         return NextResponse.json(json);
     } catch (error: any) {

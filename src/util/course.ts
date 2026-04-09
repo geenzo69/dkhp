@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { revalidateTag, updateTag } from "next/cache";
+import { revalidateTag, unstable_cache, updateTag } from "next/cache";
 
 export interface LopHocPhan {
     key: string;
@@ -70,57 +70,67 @@ export interface HocPhan {
     data_nhom_hp: LopHocPhan[];
 }
 
-export async function getCourses() {
-    const Cookies = await cookies();
+export async function getCourses(authToken: string, userId: string) {
+    return unstable_cache(
+        async () => {
+            const res = await fetch(
+                "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/hocphandadangky",
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                },
+            );
 
-    if (!Cookies.get("auth_token")?.value) return;
+            if (!res.ok) return null;
 
-    const res = await fetch("https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/hocphandadangky", {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${Cookies.get("auth_token")?.value}`
+            const json = await res.json();
+
+            if (json.msg != "OK") {
+                return null;
+            }
+
+            return json.data.data as HocPhan[];
         },
-        next: {
-            tags: ["courses"],
-            revalidate: 600 // Cache for 10 minutes
-        }
-    });
-
-    if (!res.ok) return null;
-
-    const json = await res.json();
-
-    if (json.msg != "OK") {
-        return null;
-    }
-
-    return json.data.data as HocPhan[];
+        [`courses-${userId}`],
+        {
+            tags: [`courses-${userId}`],
+            revalidate: 600, // Cache for 10 minutes
+        },
+    )();
 }
 
-export async function registerCourses(data: { dkmh_tu_dien_hoc_phan_ma: string, dkmh_nhom_hoc_phan_ma: string }[]) {
+export async function registerCourses(
+    userId: string,
+    data: { dkmh_tu_dien_hoc_phan_ma: string; dkmh_nhom_hoc_phan_ma: string }[],
+) {
     const Cookies = await cookies();
     const token = Cookies.get("auth_token")?.value;
 
     if (!token) return { success: false, msg: "Phiên đăng nhập hết hạn" };
 
-    const res = await fetch("https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/sinhvien/dangkyhocphan", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
+    const res = await fetch(
+        "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/sinhvien/dangkyhocphan",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                dkmh_tu_dien_hoat_dong_dao_tao_ma: "CQ",
+                data: data,
+            }),
         },
-        body: JSON.stringify({
-            dkmh_tu_dien_hoat_dong_dao_tao_ma: "CQ",
-            data: data
-        })
-    });
+    );
 
     if (!res.ok) return { success: false, msg: "Đã có lỗi kết nối đến máy chủ" };
 
     const json = await res.json();
 
     if (json.msg === "OK") {
-        updateTag("courses");
+        updateTag(`courses-${userId}`);
     }
 
     if (json.msg !== "OK") {

@@ -1,7 +1,8 @@
 "use client";
 
 import { X, Clock, Users, BookOpen, CheckCircle2 } from "lucide-react";
-import { HocPhan, LopHocPhan } from "../util/course";
+import { HocPhan, LopHocPhan } from "@/util/course";
+import { formatTkb } from "@/util/format";
 import { useState } from "react";
 
 interface RegistrationModalProps {
@@ -110,9 +111,7 @@ export default function RegistrationModal({
                                             <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                                 <Clock size={12} />
                                                 <span>
-                                                    {
-                                                        group.dkmh_tu_dien_lop_hoc_phan_tkb
-                                                    }
+                                                    {formatTkb(group.dkmh_tu_dien_lop_hoc_phan_tkb)}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-1.5 text-xs text-[#3f6ad8] font-bold">

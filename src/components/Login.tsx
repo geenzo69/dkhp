@@ -33,24 +33,23 @@ export interface UserInfo {
     permission_level: number;
 }
 
+import { useApp } from "@/providers/AppContext";
+
 export default function Login({
     setShowLoginModal,
-    addLog,
-    showNotify,
     setUser
 }: {
     setShowLoginModal: any,
-    addLog: any,
-    showNotify: any,
     setUser: any
 }) {
+    const { addLog, notify } = useApp();
     const [mssv, setMSSV] = useState("");
     const [password, setPassword] = useState("");
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const cookies = useCookies();
 
     const handleLogin = async () => {
-        if (!mssv || !password) return showNotify("Vui lòng điền đủ thông tin", "warning");
+        if (!mssv || !password) return notify("Vui lòng điền đủ thông tin", "warning");
 
         setIsLoggingIn(true);
         try {
@@ -59,7 +58,7 @@ export default function Login({
             });
 
             if (!token) {
-                showNotify("Sai mã số hoặc mật khẩu", "error");
+                notify("Sai mã số hoặc mật khẩu", "error");
                 setIsLoggingIn(false);
                 return;
             }
@@ -75,9 +74,9 @@ export default function Login({
 
             setShowLoginModal(false);
             addLog(`Đăng nhập thành công!`, 'success');
-            showNotify("Chào mừng bạn trở lại!", "success");
+            notify("Chào mừng bạn trở lại!", "success");
         } catch (error) {
-            showNotify("Có lỗi xảy ra khi đăng nhập", "error");
+            notify("Có lỗi xảy ra khi đăng nhập", "error");
         } finally {
             setIsLoggingIn(false);
         }
