@@ -54,16 +54,12 @@ export async function getUserInfo(input: string) {
     if (!input) return null;
 
     try {
-      // 1. Loại bỏ khoảng trắng hoặc ký tự lạ nếu có
       const cleanedInput = input.trim();
   
-      // 2. Chuyển từ Base64 sang Buffer
       const buffer = Buffer.from(cleanedInput, "base64");
   
-      // 3. Giải nén (eJx... là định dạng Zlib chuẩn nên dùng inflateSync)
       const decompressed = zlib.inflateSync(buffer);
   
-      // 4. Parse JSON
       const result = JSON.parse(decompressed.toString("utf-8"));
   
       return result as UserInfo;
