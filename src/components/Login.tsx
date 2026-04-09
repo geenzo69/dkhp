@@ -1,8 +1,6 @@
 import { User } from "lucide-react";
-import { getUserInfo, login } from "../util/authentication";
+import { login } from "../util/authentication";
 import { useState } from "react";
-import jwt from "jsonwebtoken";
-import { useCookies } from "next-client-cookies";
 
 export interface UserInfo {
     sys_manguoidung: string;
@@ -46,31 +44,23 @@ export default function Login({
     const [mssv, setMSSV] = useState("");
     const [password, setPassword] = useState("");
     const [isLoggingIn, setIsLoggingIn] = useState(false);
-    const cookies = useCookies();
 
     const handleLogin = async () => {
         if (!mssv || !password) return notify("Vui lòng điền đủ thông tin", "warning");
 
         setIsLoggingIn(true);
         try {
-            const token = await login({
+            const result = await login({
                 mssv, password
             });
 
-            if (!token) {
+            if (!result || !result.success) {
                 notify("Sai mã số hoặc mật khẩu", "error");
                 setIsLoggingIn(false);
                 return;
             }
 
-            const decoded = jwt.decode(token) as jwt.JwtPayload;
-
-            cookies.set("auth_token", token, {
-                expires: decoded.exp
-            });
-
-            const userInfo = await getUserInfo(decoded.user_info);
-            setUser(userInfo);
+            setUser(result.userInfo);
 
             setShowLoginModal(false);
             addLog(`Đăng nhập thành công!`, 'success');

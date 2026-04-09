@@ -1,6 +1,8 @@
 "use server";
 import zlib from "zlib";
+import jwt from "jsonwebtoken";
 import { UserInfo } from "../components/Login";
+import { cookies } from "next/headers";
 
 export async function login({ mssv, password }: {
     mssv: string;
@@ -47,8 +49,38 @@ export async function login({ mssv, password }: {
         return null;
     }
 
-    return getTokenJson.data.token_dkmh;
+    const token = getTokenJson.data.token_dkmh;
+    
+    try {
+        const decoded = jwt.decode(token) as any;
+        if (!decoded || !decoded.user_info) {
+            return { success: false, token, userInfo: null };
+        }
+
+        const buffer = Buffer.from(decoded.user_info, "base64");
+        const decompressed = zlib.inflateSync(buffer);
+        const userInfo = JSON.parse(decompressed.toString("utf-8")) as UserInfo;
+
+        const cookieStore = await cookies();
+        cookieStore.set("auth_token", token, {
+            expires: new Date(decoded.exp * 1000),
+            path: "/",
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+        });
+
+        return {
+            success: true,
+            token,
+            userInfo,
+            exp: decoded.exp
+        };
+    } catch (error) {
+        console.error("Lỗi xử lý thông tin người dùng:", error);
+        return { success: false, token, userInfo: null };
+    }
 }
+
 
 export async function getUserInfo(input: string) {
     if (!input) return null;
@@ -67,4 +99,4 @@ export async function getUserInfo(input: string) {
       console.error("Lỗi giải nén UserInfo");
       return null;
     }
-}
+}
