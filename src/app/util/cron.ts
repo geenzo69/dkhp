@@ -1,3 +1,24 @@
+"use server";
+
+import { revalidateTag, updateTag } from "next/cache";
+
+export async function getAllJobs() {
+    const res = await fetch("https://api.cron-job.org/jobs", {
+        method: "GET",
+        headers: {
+            Authorization: "Bearer PK7WWK290pwcqiwkY6bQpp0+OnOHjEzSFoMl/6EYjZA="
+        },
+        next: {
+            tags: ["cron-jobs"],
+            revalidate: 3600 // Cache for 1 hour by default
+        }
+    });
+
+    if (!res.ok) return [];
+    const result = await res.json();
+    return result.jobs || [];
+}
+
 export async function create(authToken: string, name: string, data: any, scheduleDate: Date, origin: string) {
     // Extract time components for cron-job.org schedule
     const minutes = [scheduleDate.getMinutes()];
@@ -41,21 +62,14 @@ export async function create(authToken: string, name: string, data: any, schedul
     });
 
     const result = await res.json();
+    
+    if (res.ok) {
+        // Revalidate the cron-jobs tag after successful creation
+        updateTag("cron-jobs");
+    }
+
     if (!res.ok) {
         return { success: false, msg: result.message || "Không thể tạo lịch đăng ký" };
     }
     return { success: true, msg: "Đã lên lịch đăng ký thành công!" };
-}
-
-export async function getAllJobs() {
-    const res = await fetch("https://api.cron-job.org/jobs", {
-        method: "GET",
-        headers: {
-            Authorization: "Bearer PK7WWK290pwcqiwkY6bQpp0+OnOHjEzSFoMl/6EYjZA="
-        }
-    });
-
-    if (!res.ok) return [];
-    const result = await res.json();
-    return result.jobs || [];
 }

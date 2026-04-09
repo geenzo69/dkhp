@@ -95,7 +95,8 @@ const MOCK_COURSES = [
 
 export default function Home() {
     const [showLoginModal, setShowLoginModal] = useState(false);
-    const [user, setUser] = useState<UserInfo | null>();
+    const [user, setUser] = useState<UserInfo | null>(null);
+    const [isUserLoading, setIsUserLoading] = useState(true);
     const [logs, setLogs] = useState<Log[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -116,9 +117,13 @@ export default function Home() {
         (async () => {
             const authToken = cookies.get("auth_token");
 
-            if (!authToken) return;
+            if (!authToken) {
+                setIsUserLoading(false);
+                return;
+            }
 
             setIsLoading(true);
+            setIsUserLoading(true);
             const decoded = jwt.decode(authToken) as jwt.JwtPayload;
 
             const userInfo = await getUserInfo(decoded.user_info);
@@ -139,11 +144,12 @@ export default function Home() {
 
             // Fetch scheduled jobs
             const jobs = await cron.getAllJobs();
-            if (userInfo) {
+            if (userInfo && jobs) {
                 setCronJobs(jobs.filter((j: any) => j.title.includes(userInfo.sys_hoten)));
             }
             
             setIsLoading(false);
+            setIsUserLoading(false);
         })();
     }, []);
 
@@ -298,7 +304,9 @@ export default function Home() {
             
             // Refresh jobs
             const jobs = await cron.getAllJobs();
-            setCronJobs(jobs.filter((j: any) => j.title.includes(user.sys_hoten)));
+            if (jobs) {
+                setCronJobs(jobs.filter((j: any) => j.title.includes(user.sys_hoten)));
+            }
         } else {
             addLog(`Lỗi: ${result.msg}`, "error");
             showNotify(result.msg, "error");
@@ -353,7 +361,15 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    {user ? (
+                    {isUserLoading ? (
+                        <div className="flex items-center gap-3 animate-pulse">
+                            <div className="text-right hidden sm:block">
+                                <div className="h-3 w-24 bg-slate-100 rounded mb-1"></div>
+                                <div className="h-2 w-16 bg-slate-50 rounded ml-auto"></div>
+                            </div>
+                            <div className="w-10 h-10 rounded-full bg-slate-100"></div>
+                        </div>
+                    ) : user ? (
                         <div className="flex items-center gap-3">
                             <div className="text-right hidden sm:block">
                                 <p className="text-xs font-bold leading-none">
@@ -387,7 +403,14 @@ export default function Home() {
 
             <div className="flex flex-1">
                 <main className="flex-1 p-6 md:p-8 overflow-x-hidden">
-                    {!user ? (
+                    {isUserLoading ? (
+                        <div className="flex flex-col items-center justify-center py-32 text-center max-w-2xl mx-auto animate-pulse">
+                            <div className="w-20 h-20 bg-slate-100 rounded-2xl mb-8"></div>
+                            <div className="h-8 w-64 bg-slate-100 rounded mb-4"></div>
+                            <div className="h-4 w-96 bg-slate-50 rounded mb-8"></div>
+                            <div className="h-12 w-40 bg-slate-100 rounded"></div>
+                        </div>
+                    ) : !user ? (
                         <div className="flex flex-col items-center justify-center py-32 text-center max-w-2xl mx-auto">
                             <div className="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center text-[#3f6ad8] mb-8 rotate-3">
                                 <BookOpen size={40} />

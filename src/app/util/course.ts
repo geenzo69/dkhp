@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { revalidateTag, updateTag } from "next/cache";
 
 export interface LopHocPhan {
     key: string;
@@ -78,6 +79,10 @@ export async function getCourses() {
         method: "POST",
         headers: {
             Authorization: `Bearer ${Cookies.get("auth_token")?.value}`
+        },
+        next: {
+            tags: ["courses"],
+            revalidate: 600 // Cache for 10 minutes
         }
     });
 
@@ -113,6 +118,10 @@ export async function registerCourses(data: { dkmh_tu_dien_hoc_phan_ma: string, 
     if (!res.ok) return { success: false, msg: "Đã có lỗi kết nối đến máy chủ" };
 
     const json = await res.json();
+
+    if (json.msg === "OK") {
+        updateTag("courses");
+    }
 
     if (json.msg !== "OK") {
         return { success: false, msg: json.msg || "Đăng ký thất bại" };
