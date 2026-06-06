@@ -1,7 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useState,
+} from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import Toast, { Notification } from "@/components/Toast";
+import type { HocPhan, LopHocPhan } from "@/util/course";
 
 interface Log {
     id: number;
@@ -12,6 +19,10 @@ interface Log {
 
 interface AppContextType {
     logs: Log[];
+    plannedCourses: { course: HocPhan; group: LopHocPhan }[];
+    setPlannedCourses: Dispatch<
+        SetStateAction<{ course: HocPhan; group: LopHocPhan }[]>
+    >;
     addLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
     clearLogs: () => void;
     notify: (text: string, type?: "info" | "success" | "warning" | "error", duration?: number) => void;
@@ -22,6 +33,9 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
     const [logs, setLogs] = useState<Log[]>([]);
+    const [plannedCourses, setPlannedCourses] = useState<
+        { course: HocPhan; group: LopHocPhan }[]
+    >([]);
     const [notification, setNotification] = useState<Notification | null>(null);
 
     const addLog = useCallback((message: string, type: "info" | "success" | "warning" | "error" = "info") => {
@@ -49,7 +63,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <AppContext.Provider value={{ logs, addLog, clearLogs, notify, notification }}>
+        <AppContext.Provider
+            value={{
+                logs,
+                plannedCourses,
+                setPlannedCourses,
+                addLog,
+                clearLogs,
+                notify,
+                notification,
+            }}
+        >
             {children}
             {notification && <Toast notification={notification} />}
         </AppContext.Provider>

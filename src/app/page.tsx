@@ -17,7 +17,7 @@ export default async function Home() {
             if (decoded && decoded.user_info) {
                 initialUser = await getUserInfo(decoded.user_info);
                 if (initialUser) {
-                    initialCourses = await getCourses(authToken, initialUser.sys_manguoidung);
+                    initialCourses = await getCourses(initialUser.sys_manguoidung);
                 }
             }
         } catch (e) {

@@ -13,7 +13,6 @@ interface ResultSummaryProps {
     showScheduleUI: boolean;
     setShowScheduleUI: (show: boolean) => void;
     handleConfirmAll: () => void;
-    handleScheduleRegistration: () => void;
     scheduleTime: string;
     setScheduleTime: (time: string) => void;
 }
@@ -28,7 +27,6 @@ export default function ResultSummary({
     showScheduleUI,
     setShowScheduleUI,
     handleConfirmAll,
-    handleScheduleRegistration,
     scheduleTime,
     setScheduleTime,
 }: ResultSummaryProps) {
@@ -179,7 +177,6 @@ export default function ResultSummary({
                             />
                             <div className="grid grid-cols-2 gap-2">
                                 <button
-                                    onClick={handleScheduleRegistration}
                                     className="bg-amber-500 hover:bg-amber-400 text-white font-bold py-2.5 rounded text-[10px] uppercase tracking-wider"
                                 >
                                     Xác nhận lịch

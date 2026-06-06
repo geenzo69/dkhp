@@ -70,7 +70,15 @@ export interface HocPhan {
     data_nhom_hp: LopHocPhan[];
 }
 
-export async function getCourses(authToken: string, userId: string) {
+export async function getCourses(userId: string) {
+    const cookieStore = await cookies();
+
+    const authToken = cookieStore.get("auth_token")?.value;
+
+    if (!authToken) {
+        return null;
+    }
+
     return unstable_cache(
         async () => {
             const res = await fetch(

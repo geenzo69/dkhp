@@ -10,20 +10,17 @@ import {
     LopHocPhan,
     registerCourses,
 } from "@/util/course";
-import * as cron from "@/util/cron";
 import { useApp } from "@/providers/AppContext";
 import Header from "./Header";
 import CourseList from "./CourseList";
 import ResultSummary from "./ResultSummary";
 import SystemLogs from "./SystemLogs";
-import ScheduledJobs from "./ScheduledJobs";
-import Login, { UserInfo } from "./Login";
 import RegistrationModal from "./RegistrationModal";
-import Schedule from "./Schedule";
 import { BookOpen } from "lucide-react";
+import User from "@/types/User";
 
 interface DashboardProps {
-    initialUser: UserInfo | null;
+    initialUser: User | null;
     initialCourses: HocPhan[] | null;
 }
 
@@ -31,22 +28,22 @@ export default function Dashboard({
     initialUser,
     initialCourses,
 }: DashboardProps) {
-    const [showLoginModal, setShowLoginModal] = useState(false);
-    const [user, setUser] = useState<UserInfo | null>(initialUser);
+    const [user, setUser] = useState<User | null>(initialUser);
     const [isUserLoading, setIsUserLoading] = useState(!initialUser);
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [showScheduleUI, setShowScheduleUI] = useState(false);
     const [scheduleTime, setScheduleTime] = useState("");
-    const [cronJobs, setCronJobs] = useState<any[]>([]);
     const [courses, setCourses] = useState<HocPhan[] | null>(initialCourses);
     const [selectedCourseForModal, setSelectedCourseForModal] =
         useState<HocPhan | null>(null);
-    const [registeredHP, setRegisteredHP] = useState<
-        { course: HocPhan; group: LopHocPhan }[]
-    >([]);
 
-    const { addLog, notify } = useApp();
+    const {
+        addLog,
+        notify,
+        plannedCourses: registeredHP,
+        setPlannedCourses: setRegisteredHP,
+    } = useApp();
     const cookies = useCookies();
 
     useEffect(() => {
@@ -60,16 +57,8 @@ export default function Dashboard({
                 return;
             }
 
-            // If we already have user and courses from SSR, just fetch background data like cronJobs
+            // If we already have user and courses from SSR, just mark as loaded
             if (user && courses) {
-                const jobs = await cron.getAllJobs();
-                if (jobs) {
-                    setCronJobs(
-                        jobs.filter((j: any) =>
-                            j.title.includes(user.sys_hoten),
-                        ),
-                    );
-                }
                 setIsUserLoading(false);
                 return;
             }
@@ -88,7 +77,6 @@ export default function Dashboard({
                 setUser(userInfo);
 
                 const hp = await getCourses(
-                    authToken,
                     userInfo.sys_manguoidung,
                 );
                 if (!hp) {
@@ -98,15 +86,6 @@ export default function Dashboard({
                     );
                 } else {
                     setCourses(hp);
-                }
-
-                const jobs = await cron.getAllJobs();
-                if (jobs) {
-                    setCronJobs(
-                        jobs.filter((j: any) =>
-                            j.title.includes(userInfo.sys_hoten),
-                        ),
-                    );
                 }
             } catch (e) {
                 console.error("Client fetch error:", e);
@@ -123,7 +102,7 @@ export default function Dashboard({
         const interval = setInterval(async () => {
             const authToken = cookies.get("auth_token");
             if (authToken) {
-                const hp = await getCourses(authToken, user.sys_manguoidung);
+                const hp = await getCourses(user.sys_manguoidung);
                 if (hp) {
                     setCourses(hp);
                 }
@@ -216,69 +195,8 @@ export default function Dashboard({
             setRegisteredHP([]);
             const authToken = cookies.get("auth_token");
             if (authToken) {
-                const hp = await getCourses(authToken, user.sys_manguoidung);
+                const hp = await getCourses(user.sys_manguoidung);
                 if (hp) setCourses(hp);
-            }
-        } else {
-            addLog(`Lỗi: ${result.msg}`, "error");
-            notify(result.msg, "error");
-        }
-        setIsLoading(false);
-    };
-
-    const handleScheduleRegistration = async () => {
-        if (registeredHP.length === 0 || !scheduleTime) return;
-
-        const authToken = cookies.get("auth_token");
-        if (!authToken || !user) return;
-
-        const decoded = jwt.decode(authToken) as jwt.JwtPayload;
-        const expiryTime = (decoded.exp || 0) * 1000;
-        const selectedTime = new Date(scheduleTime).getTime();
-
-        if (selectedTime <= Date.now()) {
-            notify("Thời gian lên lịch phải ở tương lai!", "error");
-            return;
-        }
-
-        if (selectedTime >= expiryTime) {
-            const expiryDate = new Date(expiryTime).toLocaleString();
-            notify(
-                `Token sẽ hết hạn vào ${expiryDate}. Vui lòng lên lịch trước thời gian này!`,
-                "error",
-            );
-            return;
-        }
-
-        setIsLoading(true);
-        addLog(
-            `Hệ thống: Đang lên lịch đăng ký cho ${user.sys_hoten}...`,
-            "info",
-        );
-
-        const data = registeredHP.map((r) => ({
-            dkmh_tu_dien_hoc_phan_ma: r.course.dkmh_tu_dien_hoc_phan_ma,
-            dkmh_nhom_hoc_phan_ma: r.group.dkmh_nhom_hoc_phan_ma,
-        }));
-
-        const result = await cron.create(
-            authToken,
-            user.sys_hoten,
-            data,
-            new Date(scheduleTime),
-            window.location.origin,
-        );
-
-        if (result.success) {
-            addLog(`Hệ thống: ${result.msg}`, "success");
-            notify(result.msg, "success");
-            setShowScheduleUI(false);
-            setRegisteredHP([]);
-            const jobs = await cron.getAllJobs();
-            if (jobs) {
-                setCronJobs(
-                    jobs.filter((j: any) => j.title.includes(user.sys_hoten)),
-                );
             }
         } else {
             addLog(`Lỗi: ${result.msg}`, "error");
@@ -313,7 +231,9 @@ export default function Dashboard({
             <Header
                 user={user}
                 isUserLoading={isUserLoading}
-                onLoginClick={() => setShowLoginModal(true)}
+                onLoginClick={() => {
+                    window.location.href = "/login";
+                }}
             />
 
             <div className="flex flex-1">
@@ -337,7 +257,9 @@ export default function Dashboard({
                                 chọn các lớp học phần cho học kỳ mới.
                             </p>
                             <button
-                                onClick={() => setShowLoginModal(true)}
+                                onClick={() => {
+                                    window.location.href = "/login";
+                                }}
                                 className="bg-[#3f6ad8] text-white px-10 py-4 rounded font-bold uppercase tracking-widest text-xs shadow-lg shadow-blue-200 hover:shadow-xl hover:-translate-y-1 transition-all mx-auto block"
                             >
                                 Truy cập ngay
@@ -366,34 +288,16 @@ export default function Dashboard({
                                     showScheduleUI={showScheduleUI}
                                     setShowScheduleUI={setShowScheduleUI}
                                     handleConfirmAll={handleConfirmAll}
-                                    handleScheduleRegistration={
-                                        handleScheduleRegistration
-                                    }
                                     scheduleTime={scheduleTime}
                                     setScheduleTime={setScheduleTime}
                                 />
 
-                                <ScheduledJobs cronJobs={cronJobs} />
-
                                 <SystemLogs />
-                            </div>
-                            <div className="xl:col-span-12 mt-8">
-                                <Schedule
-                                    registeredHP={registeredHP}
-                                    apiRegisteredCourses={courses}
-                                />
                             </div>
                         </div>
                     )}
                 </main>
             </div>
-
-            {showLoginModal && (
-                <Login
-                    setShowLoginModal={setShowLoginModal}
-                    setUser={setUser}
-                />
-            )}
 
             {selectedCourseForModal && (
                 <RegistrationModal
