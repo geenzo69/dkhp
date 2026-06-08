@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import { HocPhan, LopHocPhan } from "@/util/course";
 import { AlertTriangle, Calendar, Clock, Info } from "lucide-react";
+import { useApp } from "@/providers/AppContext";
 
 interface ScheduleProps {
-    registeredHP: { course: HocPhan; group: LopHocPhan }[];
     apiRegisteredCourses: HocPhan[] | null;
 }
 
@@ -77,10 +77,10 @@ function parseBlocks(
 }
 
 export default function Schedule({
-    registeredHP,
     apiRegisteredCourses,
 }: ScheduleProps) {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
+    const { plannedCourses } = useApp();
 
     const allBlocks = useMemo(() => {
         const list: ParsedSlot[] = [];
@@ -115,7 +115,7 @@ export default function Schedule({
                 );
             });
 
-        registeredHP.forEach(({ course, group }) => {
+        plannedCourses.forEach(({ course, group }) => {
             const color = colors[colorIdx % colors.length];
             colorIdx++;
 
@@ -136,7 +136,7 @@ export default function Schedule({
         });
 
         return list;
-    }, [registeredHP, apiRegisteredCourses]);
+    }, [plannedCourses, apiRegisteredCourses]);
 
     const getOccupyingBlock = (day: number, period: number) =>
         allBlocks.find(
@@ -174,7 +174,7 @@ export default function Schedule({
             </div>
 
             <div className="overflow-x-auto">
-                <table className="w-full border-collapse table-fixed min-w-[1000px]">
+                <table className="w-full border-collapse table-fixed min-w-250">
                     <thead>
                         <tr>
                             <th className="w-16 py-3 bg-slate-100 border border-slate-200 text-[10px] font-black uppercase text-slate-400">
