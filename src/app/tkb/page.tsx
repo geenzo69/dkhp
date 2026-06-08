@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { getUserInfo } from "@/util/authentication";
-import { getCourses } from "@/util/course";
 import Header from "@/components/Header";
 import Schedule from "./components/Schedule";
+import getCourses from "../actions/getCourses";
 
 export default async function Page() {
     const cookieStore = await cookies();
@@ -18,9 +18,7 @@ export default async function Page() {
             if (decoded?.user_info) {
                 user = await getUserInfo(decoded.user_info);
                 if (user) {
-                    initialCourses = await getCourses(
-                        user.sys_manguoidung,
-                    );
+                    initialCourses = await getCourses();
                 }
             }
         } catch (error) {
@@ -44,9 +42,7 @@ export default async function Page() {
                     </p>
                 </div>
 
-                <Schedule
-                    apiRegisteredCourses={initialCourses}
-                />
+                <Schedule />
             </main>
         </div>
         

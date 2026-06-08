@@ -1,12 +1,13 @@
 "use client";
 
 import { X, Clock, Users, BookOpen, CheckCircle2 } from "lucide-react";
-import { HocPhan, LopHocPhan } from "@/util/course";
 import { formatTkb } from "@/util/format";
 import { useState } from "react";
+import Course from "@/types/Course";
+import LopHocPhan from "@/types/LopHocPhan";
 
 interface RegistrationModalProps {
-    course: HocPhan;
+    course: Course;
     onClose: () => void;
     onConfirm: (group: LopHocPhan) => void;
 }

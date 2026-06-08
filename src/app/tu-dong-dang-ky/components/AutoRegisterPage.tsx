@@ -52,11 +52,7 @@ export default function AutoRegisterPage({
     return (
         <div className="min-h-screen bg-[#f1f4f6] text-slate-700 font-sans flex flex-col">
             <Header
-                user={initialUser}
-                isUserLoading={false}
-                onLoginClick={() => {
-                    window.location.href = "/login";
-                }}
+                user={initialUser || undefined}
             />
 
             <main className="flex-1 p-6 md:p-8 overflow-x-hidden">

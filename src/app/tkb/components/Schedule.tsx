@@ -1,13 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { HocPhan, LopHocPhan } from "@/util/course";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Calendar, Clock, Info } from "lucide-react";
 import { useApp } from "@/providers/AppContext";
-
-interface ScheduleProps {
-    apiRegisteredCourses: HocPhan[] | null;
-}
+import { useAction } from "next-safe-action/hooks";
+import getCourses from "@/app/actions/getCourses";
 
 const DAYS = [
     { label: "Thứ 2", value: 2 },
@@ -76,11 +73,118 @@ function parseBlocks(
     return blocks;
 }
 
-export default function Schedule({
-    apiRegisteredCourses,
-}: ScheduleProps) {
+function ScheduleSkeleton() {
+    return (
+        <div
+            className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-300"
+            aria-busy="true"
+        >
+            <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Calendar size={18} className="text-[#3f6ad8]" />
+                    <h3 className="font-bold text-slate-700 uppercase tracking-tight text-sm">
+                        Thời khóa biểu tổng hợp
+                    </h3>
+                </div>
+                <div className="h-3 w-28 rounded bg-slate-200 animate-pulse" />
+            </div>
+
+            <div className="overflow-x-auto">
+                <table className="w-full border-collapse table-fixed min-w-250">
+                    <thead>
+                        <tr>
+                            <th className="w-16 py-3 bg-slate-100 border border-slate-200 text-[10px] font-black uppercase text-slate-400">
+                                Tiết
+                            </th>
+                            {DAYS.map((day) => (
+                                <th
+                                    key={day.value}
+                                    className="py-3 bg-slate-100 border border-slate-200 text-[11px] font-black uppercase text-slate-600"
+                                >
+                                    {day.label}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {PERIODS.map((period) => (
+                            <tr key={period} className="h-14">
+                                <td className="bg-slate-50 border border-slate-100 text-center text-[10px] font-bold text-slate-400">
+                                    {period}
+                                </td>
+                                {DAYS.map((day) => {
+                                    const showBlock =
+                                        (day.value + period) % 5 === 0 ||
+                                        (day.value === 4 && period % 4 === 0);
+
+                                    return (
+                                        <td
+                                            key={`${day.value}-${period}`}
+                                            className="border border-slate-100 p-2"
+                                        >
+                                            {showBlock && (
+                                                <div className="h-8 rounded bg-slate-200/80 animate-pulse" />
+                                            )}
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t flex flex-wrap gap-6 items-center">
+                <div className="h-3 w-24 rounded bg-slate-200 animate-pulse" />
+                <div className="h-3 w-24 rounded bg-slate-200 animate-pulse" />
+                <div className="ml-auto h-3 w-56 rounded bg-slate-200 animate-pulse" />
+            </div>
+        </div>
+    );
+}
+
+export default function Schedule() {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
-    const { plannedCourses } = useApp();
+    const { plannedCourses, courses, setCourses, notify } = useApp();
+
+    const { execute, isExecuting } = useAction(getCourses, {
+        onError: ({ error }) => {
+            if (error.serverError) {
+                notify(error.serverError, "error");
+            } else if (error.validationErrors) {
+                const messages = Object.values(error.validationErrors)
+                    .flatMap((err: unknown) => {
+                        if (Array.isArray(err)) return err;
+                        if (
+                            err &&
+                            typeof err === "object" &&
+                            "_errors" in err
+                        ) {
+                            const errors = (err as { _errors?: unknown })
+                                ._errors;
+                            return Array.isArray(errors) ? errors : [];
+                        }
+
+                        return [];
+                    })
+                    .join(", ");
+                notify(messages || "Validation error!", "error");
+            } else {
+                notify("Đã có lỗi xảy ra", "error");
+            }
+        },
+        onSuccess: ({ data }) => {
+            if (!data) {
+                return;
+            }
+
+            setCourses(data);
+        }
+    });
+
+    useEffect(() => {
+        execute();
+    }, [execute]);
 
     const allBlocks = useMemo(() => {
         const list: ParsedSlot[] = [];
@@ -96,7 +200,7 @@ export default function Schedule({
         ];
         let colorIdx = 0;
 
-        apiRegisteredCourses
+        courses
             ?.filter((course) => course.trang_thai_dang_ky === 1)
             .forEach((course) => {
                 parseBlocks(course.dkmh_tu_dien_lop_hoc_phan_tkb).forEach(
@@ -136,7 +240,7 @@ export default function Schedule({
         });
 
         return list;
-    }, [plannedCourses, apiRegisteredCourses]);
+    }, [plannedCourses, courses]);
 
     const getOccupyingBlock = (day: number, period: number) =>
         allBlocks.find(
@@ -150,6 +254,10 @@ export default function Schedule({
         allBlocks.filter(
             (block) => block.day === day && block.startPeriod === period,
         );
+
+    if (isExecuting) {
+        return <ScheduleSkeleton />;
+    }
 
     if (allBlocks.length === 0) {
         return (

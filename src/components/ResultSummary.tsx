@@ -1,7 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
-import { HocPhan, LopHocPhan } from "@/util/course";
+import { Loader2, Trash2 } from "lucide-react";
 import { useApp } from "@/providers/AppContext";
 import { useAction } from "next-safe-action/hooks";
 import registerCourse from "@/app/actions/registerCourse";
@@ -42,12 +41,13 @@ export default function ResultSummary() {
             </h3>
             <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="bg-white/10 p-4 rounded-lg border border-white/10">
+                    <p className="text-2xl font-black">{courses.length + plannedCourses.length}</p>
                     <p className="text-[10px] font-bold uppercase opacity-60">
                         Môn học
                     </p>
                 </div>
                 <div className="bg-white/10 p-4 rounded-lg border border-white/10">
-                    <p className="text-2xl font-black">{0}</p>
+                    <p className="text-2xl font-black">{courses.map((v) => v.dkmh_tu_dien_hoc_phan_so_tin_chi).reduce((a, b) => a + b, 0)}</p>
                     <p className="text-[10px] font-bold uppercase opacity-60">
                         Tín chỉ
                     </p>
@@ -147,7 +147,11 @@ export default function ResultSummary() {
                         <div className="grid grid-cols-2 gap-3">
                             <button
                                 onClick={async () => {
-                                    if (plannedCourses.length === 0) return;
+                                    if (
+                                        plannedCourses.length === 0 ||
+                                        isExecuting
+                                    )
+                                        return;
 
                                     addLog("Hệ thống: Đang gửi yêu cầu đăng ký học phần...", "info");
 
@@ -158,9 +162,21 @@ export default function ResultSummary() {
 
                                     execute(data);
                                 }}
-                                className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded shadow-lg shadow-emerald-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95"
+                                disabled={isExecuting}
+                                aria-busy={isExecuting}
+                                className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded shadow-lg shadow-emerald-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95 disabled:cursor-not-allowed disabled:bg-emerald-500/60 disabled:hover:bg-emerald-500/60 disabled:active:scale-100"
                             >
-                                Đăng ký ngay
+                                {isExecuting ? (
+                                    <>
+                                        <Loader2
+                                            size={14}
+                                            className="animate-spin"
+                                        />
+                                        Đang đăng ký...
+                                    </>
+                                ) : (
+                                    "Đăng ký ngay"
+                                )}
                             </button>
                             <button
                                 className="bg-amber-500 hover:bg-amber-400 text-white font-bold py-4 rounded shadow-lg shadow-amber-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95"

@@ -167,7 +167,7 @@ export default function CourseItem({
                 <div className="flex items-center justify-end gap-2">
                     {active && (
                         <button
-                            onClick={() => (course: Course) => {
+                            onClick={() => {
                                 if (
                                     plannedCourses.some(
                                         (r) =>
@@ -178,6 +178,7 @@ export default function CourseItem({
                                     notify("Bạn đã đăng ký học phần này rồi!", "warning");
                                     return;
                                 }
+
                                 setSelectedCourseForModal(course);
                             }}
                             className="text-[10px] font-black uppercase text-slate-400 hover:text-[#3f6ad8] transition-colors p-2 rounded-lg hover:bg-slate-100"
@@ -221,6 +222,7 @@ export default function CourseItem({
                                     notify("Bạn đã đăng ký học phần này rồi!", "warning");
                                     return;
                                 }
+
                                 setSelectedCourseForModal(course);
                             }}
                             className="border-2 border-[#3f6ad8] text-[#3f6ad8] px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest hover:bg-[#3f6ad8] hover:text-white transition-all active:scale-95 shadow-sm"

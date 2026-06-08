@@ -8,8 +8,8 @@ import {
 } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import Toast, { Notification } from "@/components/Toast";
-import type { HocPhan, LopHocPhan } from "@/util/course";
 import Course from "@/types/Course";
+import LopHocPhan from "@/types/LopHocPhan";
 
 interface Log {
     id: number;
@@ -21,12 +21,12 @@ interface Log {
 interface AppContextType {
     logs: Log[];
     courses: Course[];
-    plannedCourses: { course: HocPhan; group: LopHocPhan }[];
+    plannedCourses: { course: Course; group: LopHocPhan }[];
     setCourses: Dispatch<
         SetStateAction<Course[]>
     >;
     setPlannedCourses: Dispatch<
-        SetStateAction<{ course: HocPhan; group: LopHocPhan }[]>
+        SetStateAction<{ course: Course; group: LopHocPhan }[]>
     >;
     addLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
     clearLogs: () => void;
@@ -40,7 +40,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [logs, setLogs] = useState<Log[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
     const [plannedCourses, setPlannedCourses] = useState<
-        { course: HocPhan; group: LopHocPhan }[]
+        { course: Course; group: LopHocPhan }[]
     >([]);
     const [notification, setNotification] = useState<Notification | null>(null);
 
