@@ -30,6 +30,12 @@ export async function getToken(mssv: string, password: string) {
 
     mssv = mssv.trim();
 
+    const warm = (o: string) =>
+        fetch(o, { method: "HEAD" }).then(r => r.body?.cancel()).catch(() => {});
+    warm("https://htql.ctu.edu.vn");
+    warm("https://accounts.ctu.edu.vn");
+    warm("https://dkmh.ctu.edu.vn");
+
     const jar = new Map<string, string>();
 
     const decode = (s: string) =>
@@ -67,7 +73,6 @@ export async function getToken(mssv: string, password: string) {
         for (const sc of setCookies) {
             const [pair, ...attrs] = sc.split(";");
             const i = pair.indexOf("=");
-
             if (i < 0) continue;
 
             const name = pair.slice(0, i).trim();
@@ -84,6 +89,8 @@ export async function getToken(mssv: string, password: string) {
         return res;
     };
 
+    const skip = (res: Response) => { res.body?.cancel(); return res; };
+
     const getForms = (html: string) => {
         html = html.replace(/<!--[\s\S]*?-->/g, "");
 
@@ -95,7 +102,6 @@ export async function getToken(mssv: string, password: string) {
                 decode(tag.match(new RegExp(`\\b${name}\\s*=\\s*["']([^"']*)["']`, "i"))?.[1] ?? "");
 
             const inputs: Record<string, string> = {};
-
             for (const im of block.matchAll(/<input\b[^>]*>/gi)) {
                 const tag = im[0];
                 const name = attr(tag, "name");
@@ -110,7 +116,7 @@ export async function getToken(mssv: string, password: string) {
         }).filter(x => x.action);
     };
 
-    const postForm = async (form: any, base: string, referer = base) => {
+    const postForm = async (form: any, base: string, referer = base, readBody = true) => {
         const url = form.action.startsWith("http")
             ? form.action
             : new URL(form.action, base).href;
@@ -125,17 +131,13 @@ export async function getToken(mssv: string, password: string) {
             body: new URLSearchParams(form.inputs).toString(),
         });
 
-        return {
-            url,
-            res,
-            html: await res.text().catch(() => ""),
-        };
+        const html = readBody ? await res.text().catch(() => "") : (res.body?.cancel(), "");
+        return { url, res, html };
     };
 
     const loc = (res: Response, base?: string) => {
         const location = res.headers.get("location");
         if (!location) throw new Error("MSSV hoặc mật khẩu sai");
-
         return base && !location.startsWith("http")
             ? new URL(location, base).href
             : location;
@@ -150,13 +152,13 @@ export async function getToken(mssv: string, password: string) {
     const url1 = "https://htql.ctu.edu.vn/htql/detect_sso.php";
 
     let res = await f(url1);
-    let url = loc(res);
+    let url = loc(skip(res));
 
     res = await f(url, { headers: { Referer: url1 } });
-    url = loc(res);
+    url = loc(skip(res));
 
     res = await f(url);
-    await res.text();
+    skip(res);
 
     const loginUrl = url;
     const sessionDataKey = new URL(loginUrl).searchParams.get("sessionDataKey");
@@ -177,7 +179,7 @@ export async function getToken(mssv: string, password: string) {
         }).toString(),
     });
 
-    url = loc(res);
+    url = loc(skip(res));
 
     res = await f(url, { headers: { Referer: loginUrl } });
     let html = await res.text();
@@ -194,10 +196,8 @@ export async function getToken(mssv: string, password: string) {
         f.action.includes("/htql/sinhvien/dang_nhap_sso.php")
     );
 
-    posted = await postForm(dkmhSsoForm, url, url);
+    posted = await postForm(dkmhSsoForm, url, url, false);
     res = posted.res;
-    html = posted.html;
-    url = posted.url;
 
     url = loc(res, url);
     res = await f(url, { headers: { Referer: posted.url } });
@@ -206,9 +206,8 @@ export async function getToken(mssv: string, password: string) {
     const samlForm2 = form(html, f => "SAMLResponse" in f.inputs);
 
     posted = await postForm(samlForm2, url, url);
-    res = posted.res;
-    html = posted.html;
     url = posted.url;
+    html = posted.html;
 
     const hindexPath =
         html.match(/location\.href\s*=\s*["']([^"']+)["']/i)?.[1] ??
@@ -222,28 +221,24 @@ export async function getToken(mssv: string, password: string) {
 
     const dkForm = form(html, f => f.name === "frmDuLieuDKindex");
 
-    posted = await postForm(dkForm, url, url);
+    posted = await postForm(dkForm, url, url, false);
     res = posted.res;
-    html = posted.html;
-    url = posted.url;
 
     url = loc(res, url);
     res = await f(url, { headers: { Referer: posted.url } });
-    html = await res.text();
+    url = loc(skip(res), url);
 
-    url = loc(res, url);
     res = await f(url, { headers: { Referer: posted.url } });
     html = await res.text();
 
     const samlForm3 = form(html, f => "SAMLResponse" in f.inputs);
 
-    posted = await postForm(samlForm3, url, url);
+    posted = await postForm(samlForm3, url, url, false);
     res = posted.res;
-    url = posted.url;
 
     url = loc(res, url);
     res = await f(url, { headers: { Referer: posted.url } });
-    await res.text().catch(() => "");
+    skip(res);
 
     const token = jar.get("access_token");
     if (!token) throw new Error("MSSV hoặc mật khẩu sai");
