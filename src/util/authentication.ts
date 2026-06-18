@@ -1,25 +1,144 @@
-"use server";
-
 import User from "@/types/User";
 import zlib from "zlib";
+import { decode, JwtPayload, sign, verify } from "jsonwebtoken";
+import { cookies } from "next/headers";
 
+const secret = process.env.DKHP_SECRET || "";
 
-export async function getUserInfo(input: string) {
-    if (!input) return null;
+export function generateToken(mssv: string, password: string, token: string) {    
+    const authToken = sign({
+        mssv: mssv,
+        password: Buffer.from(password).toBase64(),
+        token: token
+    }, secret, {
+        expiresIn: "360d",
+        algorithm: "HS256"
+    });
+
+    return authToken;
+}
+
+export async function setAuthCookie(
+    mssv: string,
+    password: string,
+    token: string
+) {
+    const cookieStore = await cookies();
+    const authToken = generateToken(mssv, password, token);
+
+    cookieStore.set("auth_token", authToken, {
+        httpOnly: true,
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+    });
+}
+
+export async function getSavedCredentials() {
+    const cookieStore = await cookies();
+    const authToken = cookieStore.get("auth_token")?.value;
+
+    if (!authToken) return;
 
     try {
-      const cleanedInput = input.trim();
+        const payload = verify(authToken, secret, {
+            algorithms: ["HS256"],
+        }) as JwtPayload;
+
+        if (
+            typeof payload.mssv !== "string" ||
+            typeof payload.password !== "string"
+        ) {
+            return;
+        }
+
+        return {
+            mssv: payload.mssv,
+            password: Buffer.from(payload.password, "base64").toString("utf-8"),
+        };
+    } catch {
+        return;
+    }
+}
+
+export async function getSavedUser() {
+    const cookieStore = await cookies();
+    const authToken = cookieStore.get("auth_token")?.value;
+
+    if (!authToken) return;
+
+    try {
+        const payload = verify(authToken, secret, {
+            algorithms: ["HS256"],
+        }) as JwtPayload;
+
+        if (typeof payload.token !== "string") return;
+
+        const decodedToken = decode(payload.token) as JwtPayload | null;
+
+        if (!decodedToken || typeof decodedToken.user_info !== "string") {
+            return;
+        }
+
+        const buffer = Buffer.from(decodedToken.user_info.trim(), "base64");
+        const decompressed = zlib.inflateSync(buffer);
+
+        return JSON.parse(decompressed.toString("utf-8")) as User;
+    } catch {
+        return;
+    }
+}
+
+export async function getDKMHToken(authToken?: string) {
+    const cookieStore = await cookies();
+    
+    if (!authToken) {
+        authToken = cookieStore.get("auth_token")?.value;
+        if (!authToken) return;
+    }
+
+    const payload = decode(authToken) as JwtPayload;
+
+    const { token } = payload;
+
+    return token;
+}
+
+export async function getUser(authToken?: string) {
+    const cookieStore = await cookies();
+    
+    if (!authToken) {
+        authToken = cookieStore.get("auth_token")?.value;
+        if (!authToken) return;
+    }
+
+    const payload = decode(authToken) as JwtPayload;
+
+    try {
+        verify(authToken, secret) as JwtPayload;
+
+        const { token } = payload;
+
+        const decodedToken = decode(token) as JwtPayload;
+
+        if (Date.now() - (decodedToken.exp || 0) * 1000 > 86_400_000) {
+            return;
+        }
+
+        if (decodedToken && decodedToken.user_info) {
+            const cleanedInput = decodedToken.user_info.trim();
   
-      const buffer = Buffer.from(cleanedInput, "base64");
-  
-      const decompressed = zlib.inflateSync(buffer);
-  
-      const result = JSON.parse(decompressed.toString("utf-8"));
-  
-      return result as User;
-    } catch (error) {
-      console.error("Lỗi giải nén UserInfo");
-      return null;
+            const buffer = Buffer.from(cleanedInput, "base64");
+        
+            const decompressed = zlib.inflateSync(buffer);
+        
+            const result = JSON.parse(decompressed.toString("utf-8"));
+        
+            return result as User;
+        }
+    } catch(err) {
+        throw new Error("The token is dead!");
     }
 }
 

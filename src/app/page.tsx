@@ -1,27 +1,20 @@
-import { getUserInfo } from "@/util/authentication";
+import { getUser } from "@/util/authentication";
 import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import Header from "@/components/Header";
 import Landing from "@/components/Landing";
 import CourseList from "@/components/CourseList";
 import ResultSummary from "@/components/ResultSummary";
 import SystemLogs from "@/components/SystemLogs";
+import { logout } from "./login/actions/logout";
+import { redirect } from "next/navigation";
 
 export default async function Home() {
-    const cookieStore = await cookies();
-    const authToken = cookieStore.get("auth_token")?.value;
-
     let user;
 
-    if (authToken) {
-        try {
-            const decoded = jwt.decode(authToken) as jwt.JwtPayload;
-            if (decoded && decoded.user_info) {
-                user = (await getUserInfo(decoded.user_info)) || undefined;
-            }
-        } catch (e) {
-            console.error("Error decoding token on server:", e);
-        }
+    try {
+        user = await getUser();
+    } catch(err) {
+        
     }
 
     return (

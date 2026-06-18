@@ -1,15 +1,19 @@
 "use client";
 
+import { logout } from "@/app/login/actions/logout";
 import User from "@/types/User";
 import {
     CalendarDays,
+    ChevronDown,
     FlaskConical,
     Home,
+    LogOut,
     User as UserIcon,
     Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 export default function Header({
     user,
@@ -17,6 +21,7 @@ export default function Header({
     user?: User
 }) {
     const pathname = usePathname();
+    const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
     const tabs = [
         { href: "/", label: "Đăng ký học phần", icon: Home },
         { href: "/tkb", label: "Thời khóa biểu", icon: CalendarDays },
@@ -25,21 +30,9 @@ export default function Header({
     ];
 
     const renderAccount = () => {
-        // if (!isUserLoading) {
-        //     return (
-        //         <div className="flex items-center gap-3 animate-pulse">
-        //             <div className="text-right hidden sm:block">
-        //                 <div className="h-3 w-24 bg-slate-100 rounded mb-1"></div>
-        //                 <div className="h-2 w-16 bg-slate-50 rounded ml-auto"></div>
-        //             </div>
-        //             <div className="w-10 h-10 rounded-full bg-slate-100"></div>
-        //         </div>
-        //     );
-        // }
-
         if (user) {
             return (
-                <div className="flex items-center gap-3">
+                <div className="relative flex items-center gap-3">
                     <div className="text-right hidden sm:block">
                         <p className="text-xs font-bold leading-none">
                             {user.sys_hoten}
@@ -48,9 +41,37 @@ export default function Header({
                             {user.sys_manguoidung}
                         </p>
                     </div>
-                    <button className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[#3f6ad8] border-2 border-transparent hover:border-[#3f6ad8] transition-all">
+                    <button
+                        type="button"
+                        aria-label="Mở menu tài khoản"
+                        aria-expanded={isAccountMenuOpen}
+                        onClick={() =>
+                            setIsAccountMenuOpen((isOpen) => !isOpen)
+                        }
+                        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-transparent bg-slate-100 text-[#3f6ad8] transition-all hover:border-[#3f6ad8]"
+                    >
                         <UserIcon size={20} />
                     </button>
+                    <ChevronDown
+                        size={14}
+                        className={`hidden text-slate-400 transition-transform sm:block ${
+                            isAccountMenuOpen ? "rotate-180" : ""
+                        }`}
+                    />
+
+                    {isAccountMenuOpen && (
+                        <div className="absolute right-0 top-12 z-50 w-44 rounded border border-slate-200 bg-white p-1 shadow-lg">
+                            <form action={logout}>
+                                <button
+                                    type="submit"
+                                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs font-bold text-red-600 transition-colors hover:bg-red-50"
+                                >
+                                    <LogOut size={15} />
+                                    Đăng xuất
+                                </button>
+                            </form>
+                        </div>
+                    )}
                 </div>
             );
         }

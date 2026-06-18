@@ -3,19 +3,20 @@
 import action from "@/util/safe-action";
 import z from "zod";
 import { cookies } from "next/headers";
+import { getDKMHToken, getUser } from "@/util/authentication";
 
 const getCourse = action.inputSchema(z.object({
     id: z.string()
 })).action(async ({ parsedInput }) => {
     const { id } = parsedInput;
 
-    const cookieStore = await cookies();
+    const user = await getUser();
 
-    const authToken = cookieStore.get("auth_token")?.value;
-
-    if (!authToken) {
-        return null;
+    if (!user) {
+        throw new Error("Bạn phải đăng nhập!");
     }
+
+    const dkmhToken = await getDKMHToken();
 
     if (!id) {
         throw new Error("Bạn phải cung cấp mã học phần!");
@@ -26,7 +27,7 @@ const getCourse = action.inputSchema(z.object({
     const maxNam = date.getMonth() > 7 ? date.getFullYear() : date.getFullYear() - 1;
 
     try {
-        const data = await get(maxNam - 1, 1, id, authToken);
+        const data = await get(maxNam - 1, 1, id, dkmhToken);
 
         return data;
     } catch(err: any) {

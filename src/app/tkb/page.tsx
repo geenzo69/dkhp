@@ -1,29 +1,19 @@
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
-import { getUserInfo } from "@/util/authentication";
 import Header from "@/components/Header";
 import Schedule from "./components/Schedule";
-import getCourses from "../actions/getCourses";
+import { getUser } from "@/util/authentication";
+import { redirect } from "next/navigation";
 
 export default async function Page() {
-    const cookieStore = await cookies();
-    const authToken = cookieStore.get("auth_token")?.value;
+    let user;
 
-    let user = null;
-    let initialCourses = null;
+    try {
+        user = await getUser();
 
-    if (authToken) {
-        try {
-            const decoded = jwt.decode(authToken) as jwt.JwtPayload;
-            if (decoded?.user_info) {
-                user = await getUserInfo(decoded.user_info);
-                if (user) {
-                    initialCourses = await getCourses();
-                }
-            }
-        } catch (error) {
-            console.error("Error loading schedule page:", error);
+        if (!user) {
+            redirect("/login");
         }
+    } catch(err) {
+        redirect("/login");
     }
 
     return (
