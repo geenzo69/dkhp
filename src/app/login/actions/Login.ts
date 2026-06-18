@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import zlib from "zlib";
 import { cookies } from "next/headers";
 import User from "@/types/User";
+import { getToken } from "@/util/authentication";
 
 const Login = action.inputSchema(z.object({
     mssv: z.string(),
@@ -17,49 +18,8 @@ const Login = action.inputSchema(z.object({
         throw new Error("Bạn phải cung cấp MSSV và mật khẩu!");
     }
 
-    const begin = await fetch("https://ctuapi.ctu.edu.vn/ql/quanly/api/dangnhap/login", {
-        body: JSON.stringify({
-            action: "https://ctuapi.ctu.edu.vn/ql/quanly/api/dangnhap/login",
-            token: "",
-            ss_key: "",
-            doituong: "sinhvien",
-            params: {
-              user: mssv,
-              pass: password
-            }
-        }),
-        method: "POST"
-    });
+    const token = await getToken(mssv, password);
 
-    if (!begin.ok) {
-        throw new Error("Đã có lỗi xảy ra với máy chủ!");
-    }
-
-    const beginJson = await begin.json();
-
-    if (beginJson.msg != "OK") {
-        throw new Error("Tài khoản hoặc mật khẩu không chính xác!");
-    }
-
-    const getToken = await fetch("https://ctuapi.ctu.edu.vn/ql/quanly/api/dangnhap/renewtokendkmh", {
-        body: JSON.stringify({
-            token: beginJson.data.token,
-            ss_key: beginJson.data.ss_key
-        }),
-        method: "POST"
-    });
-    if (!getToken.ok) {
-        return null;
-    }
-
-    const getTokenJson = await getToken.json();
-
-    if (getTokenJson.msg != "OK") {
-        throw new Error("Đã có lỗi khi cố gắng lấy token!");
-    }
-
-    const token = getTokenJson.data.token_dkmh;
-    
     try {
         const decoded = jwt.decode(token) as any;
         if (!decoded || !decoded.user_info) {
