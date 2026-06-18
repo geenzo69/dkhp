@@ -6,6 +6,7 @@ import {
     getToken,
     setAuthCookie,
 } from "@/util/authentication";
+import { updateTag } from "next/cache";
 
 const reLogin = action.action(async () => {
     const credentials = await getSavedCredentials();
@@ -14,6 +15,7 @@ const reLogin = action.action(async () => {
         throw new Error("Thông tin đăng nhập đã hết hạn hoặc không hợp lệ.");
     }
 
+    updateTag(`user/${credentials.mssv}/${credentials.password}`);
     const token = await getToken(credentials.mssv, credentials.password);
     await setAuthCookie(credentials.mssv, credentials.password, token);
 
