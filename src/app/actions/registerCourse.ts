@@ -39,7 +39,7 @@ const registerCourse = action.inputSchema(z.array(z.object({
     const json = await res.json();
 
     if (json.msg != "OK") {
-        throw new Error("Đăng ký thất bại");
+        throw new Error(json.msg);
     }
 
     return true;

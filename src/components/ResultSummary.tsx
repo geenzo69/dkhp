@@ -5,12 +5,18 @@ import { useApp } from "@/providers/AppContext";
 import { useAction } from "next-safe-action/hooks";
 import registerCourse from "@/app/actions/registerCourse";
 import { useState } from "react";
+import createSchedule from "@/app/actions/createSchedule";
 
 export default function ResultSummary() {
     const { notify, addLog, setPlannedCourses, plannedCourses, courses } = useApp();
     const [showScheduleUI, setShowScheduleUI] = useState(false);
+    const [scheduleTime, setScheduleTime] = useState("");
+    const selectedCoursesData = plannedCourses.map((r) => ({
+        dkmh_tu_dien_hoc_phan_ma: r.course.dkmh_tu_dien_hoc_phan_ma,
+        dkmh_nhom_hoc_phan_ma: r.group.dkmh_nhom_hoc_phan_ma,
+    }));
 
-    const { execute, isExecuting } = useAction(registerCourse, {
+    const { execute: register, isExecuting: isRegister } = useAction(registerCourse, {
         onError: ({ error }) => {
             if (error.serverError) {
                 notify(error.serverError, "error");
@@ -30,7 +36,32 @@ export default function ResultSummary() {
                 return;
             }
 
-            notify("Đăng ký học phần thành công!");
+            notify("Đăng ký học phần thành công!", "success");
+        }
+    });
+
+    const { execute: schedule, isExecuting: isSchedule } = useAction(createSchedule, {
+        onError: ({ error }) => {
+            if (error.serverError) {
+                notify(error.serverError, "error");
+            } else if (error.validationErrors) {
+                const messages = Object.values(error.validationErrors)
+                    .flatMap((err: any) =>
+                        Array.isArray(err) ? err : err?._errors ?? []
+                    )
+                    .join(", ");
+                notify(messages || "Validation error!", "error");
+            } else {
+                notify("Đã có lỗi xảy ra", "error");
+            }
+        },
+        onSuccess: ({ data }) => {
+            if (!data) {
+                return;
+            }
+
+            notify("Lên kế hoạch thành công!", "success");
+            setShowScheduleUI(false);
         }
     });
 
@@ -134,11 +165,6 @@ export default function ResultSummary() {
                         ))}
                     </>
                 }
-                {/* {!isLoading && allRegisteredCount === 0 && (
-                    <p className="text-xs opacity-40 text-center py-4 italic">
-                        Chưa chọn môn học nào
-                    </p>
-                )} */}
             </div>
 
             {plannedCourses.length > 0 && (
@@ -149,24 +175,19 @@ export default function ResultSummary() {
                                 onClick={async () => {
                                     if (
                                         plannedCourses.length === 0 ||
-                                        isExecuting
+                                        isRegister
                                     )
                                         return;
 
                                     addLog("Hệ thống: Đang gửi yêu cầu đăng ký học phần...", "info");
 
-                                    const data = plannedCourses.map((r) => ({
-                                        dkmh_tu_dien_hoc_phan_ma: r.course.dkmh_tu_dien_hoc_phan_ma,
-                                        dkmh_nhom_hoc_phan_ma: r.group.dkmh_nhom_hoc_phan_ma,
-                                    }));
-
-                                    execute(data);
+                                    register(selectedCoursesData);
                                 }}
-                                disabled={isExecuting}
-                                aria-busy={isExecuting}
+                                disabled={isRegister}
+                                aria-busy={isRegister}
                                 className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded shadow-lg shadow-emerald-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95 disabled:cursor-not-allowed disabled:bg-emerald-500/60 disabled:hover:bg-emerald-500/60 disabled:active:scale-100"
                             >
-                                {isExecuting ? (
+                                {isRegister ? (
                                     <>
                                         <Loader2
                                             size={14}
@@ -179,32 +200,76 @@ export default function ResultSummary() {
                                 )}
                             </button>
                             <button
+                                onClick={(() => {
+                                    setShowScheduleUI(true);
+                                })}
                                 className="bg-amber-500 hover:bg-amber-400 text-white font-bold py-4 rounded shadow-lg shadow-amber-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95"
                             >
                                 Lên lịch tự động
                             </button>
                         </div>
                     ) : (
-                        <div className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                        <div
+                            aria-busy={isSchedule}
+                            className={`bg-white/5 p-4 rounded-lg border border-white/10 space-y-3 animate-in fade-in zoom-in-95 duration-200 ${
+                                isSchedule ? "animate-pulse opacity-80" : ""
+                            }`}
+                        >
                             <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">
                                 Chọn thời gian đăng ký
                             </p>
-                            {/* <input
+                            <input
                                 type="datetime-local"
                                 value={scheduleTime}
+                                disabled={isSchedule}
                                 onChange={(e) =>
                                     setScheduleTime(e.target.value)
                                 }
-                                className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-sm text-white focus:outline-hidden focus:border-white/40"
-                            /> */}
+                                className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-sm text-white focus:outline-hidden focus:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
+                            />
                             <div className="grid grid-cols-2 gap-2">
                                 <button
-                                    className="bg-amber-500 hover:bg-amber-400 text-white font-bold py-2.5 rounded text-[10px] uppercase tracking-wider"
+                                    onClick={() => {
+                                        if (isSchedule) {
+                                            return;
+                                        }
+
+                                        if (!scheduleTime) {
+                                            notify("Vui lòng chọn thời gian đăng ký!", "warning");
+                                            return;
+                                        }
+
+                                        addLog("Hệ thống: Đang lên lịch đăng ký tự động...", "info");
+                                        schedule({
+                                            data: selectedCoursesData,
+                                            time: scheduleTime
+                                        })
+                                    }}
+                                    disabled={isSchedule || !scheduleTime}
+                                    className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold py-2.5 rounded text-[10px] uppercase tracking-wider disabled:cursor-not-allowed disabled:bg-amber-500/60 disabled:hover:bg-amber-500/60"
                                 >
-                                    Xác nhận lịch
+                                    {isSchedule ? (
+                                        <>
+                                            <Loader2
+                                                size={14}
+                                                className="animate-spin"
+                                            />
+                                            Đang lên lịch...
+                                        </>
+                                    ) : (
+                                        "Xác nhận lịch"
+                                    )}
                                 </button>
                                 <button
-                                    className="bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded text-[10px] uppercase tracking-wider"
+                                    onClick={() => {
+                                        if (isSchedule) {
+                                            return;
+                                        }
+
+                                        setShowScheduleUI(false);
+                                    }}
+                                    disabled={isSchedule}
+                                    className="bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded text-[10px] uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     Hủy
                                 </button>
