@@ -6,17 +6,17 @@ export default function Card({ title, icon: Icon, children, color = "blue", acti
     actions?: any
 }) {
     return (
-        <div className="bg-white rounded shadow-md overflow-hidden mb-6 border-t-4" style={{ borderTopColor: color === 'blue' ? '#3f6ad8' : color }}>
-            <div className="px-6 py-4 border-b flex items-center justify-between bg-slate-50/50">
+        <div className="mc-panel mb-6">
+            <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between bg-mc-stone-dark">
                 <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded text-white`} style={{ backgroundColor: color === 'blue' ? '#3f6ad8' : color }}>
+                    <div className={`p-2 text-white bg-black/20`}>
                         <Icon size={18} />
                     </div>
-                    <h3 className="font-bold text-slate-700 uppercase text-sm tracking-wider">{title}</h3>
+                    <h3 className="font-minecraft text-white uppercase text-[10px] mc-text-shadow">{title}</h3>
                 </div>
                 {actions}
             </div>
-            <div className="p-0">
+            <div className="p-0 bg-mc-stone">
                 {children}
             </div>
         </div>

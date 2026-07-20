@@ -97,19 +97,19 @@ export default function CourseList() {
         <div className="xl:col-span-8">
             <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                    <h2 className="text-xl font-minecraft text-white mc-text-shadow">
                         Đăng ký học phần
                     </h2>
                 </div>
                 <div className="relative">
                     <Search
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-white"
                         size={16}
                     />
                     <input
                         type="text"
                         placeholder="Tìm kiếm môn học..."
-                        className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded shadow-sm text-sm w-full md:w-64 focus:ring-2 focus:ring-[#3f6ad8] focus:border-transparent outline-none transition-all"
+                        className="mc-item-slot pl-10 pr-4 py-2.5 text-white text-xs w-full md:w-64 focus:outline-none placeholder-gray-400 font-minecraft"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -120,17 +120,17 @@ export default function CourseList() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 border-b">
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            <tr className="bg-mc-obsidian text-white border-b-2 border-black">
+                                <th className="px-6 py-4 text-[10px] font-minecraft uppercase mc-text-shadow border-r-2 border-black">
                                     Học phần
                                 </th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <th className="px-6 py-4 text-[10px] font-minecraft uppercase mc-text-shadow border-r-2 border-black">
                                     Chi tiết lịch
                                 </th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <th className="px-6 py-4 text-[10px] font-minecraft uppercase mc-text-shadow border-r-2 border-black">
                                     Sĩ số
                                 </th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">
+                                <th className="px-6 py-4 text-[10px] font-minecraft uppercase mc-text-shadow text-right">
                                     Lựa chọn
                                 </th>
                             </tr>

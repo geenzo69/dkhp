@@ -89,29 +89,29 @@ export default function CourseItem({
 
     return (
         <tr
-            className={`hover:bg-slate-50/80 transition-colors ${active ? "bg-blue-50/30" : ""}`}
+            className={`border-b-2 border-black hover:bg-black/10 ${active ? "bg-mc-diamond/20" : ""}`}
         >
-            <td className="px-6 py-5">
-                <div className="font-bold text-slate-700 text-sm leading-tight mb-1">
+            <td className="px-6 py-5 border-r-2 border-black">
+                <div className="font-bold text-white text-sm leading-tight mb-1">
                     {course.dkmh_tu_dien_hoc_phan_ten_vn}
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 border">
+                    <span className="text-[10px] font-minecraft mc-text-shadow bg-black/40 px-1.5 py-0.5 text-gray-300">
                         {course.dkmh_tu_dien_hoc_phan_ma}
                     </span>
-                    <span className="text-[10px] font-bold text-[#3f6ad8] uppercase tracking-tighter">
+                    <span className="text-[10px] font-minecraft mc-text-shadow text-mc-gold uppercase tracking-tighter">
                         {course.dkmh_tu_dien_hoc_phan_so_tin_chi} Tín chỉ
                     </span>
                 </div>
             </td>
-            <td className="px-6 py-5">
+            <td className="px-6 py-5 border-r-2 border-black">
                 {active ? (
                     <>
-                        <div className="text-[10px] font-bold text-slate-600 flex items-center gap-1.5 leading-tight">
+                        <div className="text-[10px] font-bold text-gray-200 flex items-center gap-1.5 leading-tight">
                             <Clock size={12} className="shrink-0" />
                             <span>{formatTkb(registration?.group.dkmh_tu_dien_lop_hoc_phan_tkb || course.dkmh_tu_dien_lop_hoc_phan_tkb)}</span>
                         </div>
-                        <div className="text-[10px] text-[#3f6ad8] mt-1.5 uppercase tracking-tighter font-black flex items-center gap-1">
+                        <div className="text-[10px] text-mc-diamond mt-1.5 uppercase font-minecraft flex items-center gap-1 mc-text-shadow">
                             {displayGroup} •{" "}
                             {(() => {
                                 const groupData =
@@ -133,7 +133,7 @@ export default function CourseItem({
                         </div>
                     </>
                 ) : (
-                    <div className="text-[10px] text-slate-300 font-bold uppercase tracking-widest italic flex items-center gap-1">
+                    <div className="text-[10px] text-gray-400 font-minecraft uppercase mc-text-shadow flex items-center gap-1">
                         <Search size={10} /> Chưa chọn nhóm
                     </div>
                 )}
@@ -181,7 +181,7 @@ export default function CourseItem({
 
                                 setSelectedCourseForModal(course);
                             }}
-                            className="text-[10px] font-black uppercase text-slate-400 hover:text-[#3f6ad8] transition-colors p-2 rounded-lg hover:bg-slate-100"
+                            className="mc-button text-[10px] font-minecraft uppercase text-white p-2"
                             title="Xem các nhóm khác của học phần này"
                         >
                             <Info size={16} />
@@ -203,7 +203,7 @@ export default function CourseItem({
                                     "warning",
                                 );
                             }}
-                            className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors border border-red-100"
+                            className="mc-button !bg-mc-redstone text-white p-2"
                             title="Bỏ chọn học phần này"
                         >
                             <X size={16} />
@@ -225,13 +225,13 @@ export default function CourseItem({
 
                                 setSelectedCourseForModal(course);
                             }}
-                            className="border-2 border-[#3f6ad8] text-[#3f6ad8] px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest hover:bg-[#3f6ad8] hover:text-white transition-all active:scale-95 shadow-sm"
+                            className="mc-button text-white px-4 py-2 text-[10px] font-minecraft uppercase mc-text-shadow"
                         >
                             Chọn nhóm
                         </button>
                     )}
                     {isFromAPI && (
-                        <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase tracking-widest border border-slate-200">
+                        <span className="px-3 py-1 bg-black/40 text-gray-300 text-[9px] font-minecraft uppercase mc-text-shadow">
                             Đã đăng ký
                         </span>
                     )}

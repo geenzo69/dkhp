@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-    --background: #ffffff;
+    --background: #7C7C7C;
     --foreground: #171717;
+    --font-minecraft-combined: var(--font-minecraft), var(--font-minecraft-fallback), monospace;
 }
 
 @theme inline {
@@ -10,12 +11,73 @@
     --color-foreground: var(--foreground);
     --font-sans: var(--font-geist-sans);
     --font-mono: var(--font-geist-mono);
+    --font-minecraft: var(--font-minecraft-combined);
+
+    --color-mc-grass: #3B7A1F;
+    --color-mc-dirt: #7A5230;
+    --color-mc-stone: #7C7C7C;
+    --color-mc-stone-dark: #4A4A4A;
+    --color-mc-diamond: #4EE9F5;
+    --color-mc-gold: #FFD700;
+    --color-mc-redstone: #B02E26;
+    --color-mc-obsidian: #14141E;
+    --color-mc-ui: #C6C6C6;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --background: #0a0a0a;
-        --foreground: #ededed;
+@layer utilities {
+    .mc-panel {
+        border-style: solid;
+        border-width: 4px;
+        border-top-color: rgba(255, 255, 255, 0.5);
+        border-left-color: rgba(255, 255, 255, 0.5);
+        border-bottom-color: rgba(0, 0, 0, 0.5);
+        border-right-color: rgba(0, 0, 0, 0.5);
+        box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.15);
+        border-radius: 0;
+        background-color: var(--color-mc-stone);
+    }
+    .mc-button {
+        border-style: solid;
+        border-width: 4px;
+        border-top-color: rgba(255, 255, 255, 0.5);
+        border-left-color: rgba(255, 255, 255, 0.5);
+        border-bottom-color: rgba(0, 0, 0, 0.5);
+        border-right-color: rgba(0, 0, 0, 0.5);
+        box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.15);
+        border-radius: 0;
+        background-color: var(--color-mc-ui);
+        transition: none;
+    }
+    .mc-button:hover {
+        border-top-color: rgba(0, 0, 0, 0.5);
+        border-left-color: rgba(0, 0, 0, 0.5);
+        border-bottom-color: rgba(255, 255, 255, 0.5);
+        border-right-color: rgba(255, 255, 255, 0.5);
+        box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.15);
+        filter: brightness(1.1);
+    }
+    .mc-button:active {
+        border-top-color: rgba(0, 0, 0, 0.5);
+        border-left-color: rgba(0, 0, 0, 0.5);
+        border-bottom-color: rgba(255, 255, 255, 0.5);
+        border-right-color: rgba(255, 255, 255, 0.5);
+        box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.15);
+    }
+    .mc-item-slot {
+        background-color: #8B8B8B;
+        border-style: solid;
+        border-width: 2px;
+        border-top-color: #373737;
+        border-left-color: #373737;
+        border-bottom-color: #FFF;
+        border-right-color: #FFF;
+        border-radius: 0;
+    }
+    .mc-text-shadow {
+        text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.8);
+    }
+    .mc-pixelated {
+        image-rendering: pixelated;
     }
 }
 

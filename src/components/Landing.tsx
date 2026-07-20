@@ -16,7 +16,7 @@ export default function Landing() {
                 onClick={() => {
                     window.location.href = "/login";
                 }}
-                className="bg-[#3f6ad8] text-white px-10 py-4 rounded font-bold uppercase tracking-widest text-xs shadow-lg shadow-blue-200 hover:shadow-xl hover:-translate-y-1 transition-all mx-auto block"
+                className="mc-button text-white px-10 py-4 text-[10px] font-minecraft uppercase mc-text-shadow mx-auto block"
             >
                 Truy cập ngay
             </button>

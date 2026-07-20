@@ -7,12 +7,12 @@ export interface Notification {
 
 export default function Toast({ notification }: { notification: Notification }) {
     return (
-        <div className={`fixed top-20 right-8 px-6 py-4 rounded shadow-2xl flex items-center gap-4 animate-in slide-in-from-right duration-300 z-110 border-l-4 ${notification.type === 'error' ? 'bg-white text-red-600 border-red-500' :
-            notification.type === 'success' ? 'bg-white text-emerald-600 border-emerald-500' :
-                notification.type === 'warning' ? 'bg-white text-amber-500 border-amber-500' : 'bg-white text-slate-800 border-slate-400'
+        <div className={`fixed top-20 right-8 px-6 py-4 flex items-center gap-4 z-110 mc-panel ${notification.type === 'error' ? 'text-mc-redstone' :
+            notification.type === 'success' ? 'text-mc-grass' :
+                notification.type === 'warning' ? 'text-mc-gold' : 'text-white'
             }`}>
             {notification.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
-            <p className="text-xs font-black uppercase tracking-widest">{notification.text}</p>
+            <p className="text-[10px] font-minecraft mc-text-shadow uppercase">{notification.text}</p>
         </div>
     );
 }

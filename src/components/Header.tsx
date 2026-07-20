@@ -48,23 +48,23 @@ export default function Header({
                         onClick={() =>
                             setIsAccountMenuOpen((isOpen) => !isOpen)
                         }
-                        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-transparent bg-slate-100 text-[#3f6ad8] transition-all hover:border-[#3f6ad8]"
+                        className="mc-button flex h-10 w-10 items-center justify-center text-white"
                     >
                         <UserIcon size={20} />
                     </button>
                     <ChevronDown
                         size={14}
-                        className={`hidden text-slate-400 transition-transform sm:block ${
+                        className={`hidden text-slate-400 sm:block ${
                             isAccountMenuOpen ? "rotate-180" : ""
                         }`}
                     />
 
                     {isAccountMenuOpen && (
-                        <div className="absolute right-0 top-12 z-50 w-44 rounded border border-slate-200 bg-white p-1 shadow-lg">
+                        <div className="mc-panel absolute right-0 top-12 z-50 w-44 p-1">
                             <form action={logout}>
                                 <button
                                     type="submit"
-                                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs font-bold text-red-600 transition-colors hover:bg-red-50"
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[10px] font-minecraft text-mc-redstone hover:bg-mc-stone-dark hover:text-white mc-text-shadow"
                                 >
                                     <LogOut size={15} />
                                     Đăng xuất
@@ -81,7 +81,7 @@ export default function Header({
                 onClick={() => {
                     window.location.href = "/login";
                 }}
-                className="bg-[#3f6ad8] hover:bg-[#3458b6] text-white px-5 py-2 rounded text-xs font-bold uppercase tracking-widest transition-all shadow-md active:scale-95"
+                className="mc-button text-white px-5 py-2 text-[10px] font-minecraft uppercase mc-text-shadow"
             >
                 Đăng nhập
             </button>
@@ -89,11 +89,11 @@ export default function Header({
     };
 
     return (
-        <header className="bg-white shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between px-4 md:px-6 z-30 sticky top-0 border-b">
+        <header className="bg-mc-obsidian text-white flex flex-col lg:flex-row lg:items-center lg:justify-between px-4 md:px-6 z-30 sticky top-0 border-b-4 border-black mc-pixelated">
             <div className="flex h-16 items-center justify-between gap-8">
                 <div className="flex items-center gap-2">
-                    <img src="/logo.png" height={32} width={32} />
-                    <span className="font-black text-xl tracking-tighter text-[#3f6ad8]">
+                    <img src="/logo.png" height={32} width={32} className="mc-pixelated" alt="Logo" />
+                    <span className="font-minecraft text-xl text-mc-diamond mc-text-shadow">
                         DKHP
                     </span>
                 </div>
@@ -112,10 +112,10 @@ export default function Header({
                                 <Link
                                     key={tab.href}
                                     href={tab.href}
-                                    className={`flex h-10 shrink-0 items-center gap-2 rounded px-3 text-[10px] font-black uppercase tracking-wider transition-all ${
+                                    className={`flex h-10 shrink-0 items-center gap-2 px-3 text-[10px] font-minecraft uppercase mc-text-shadow ${
                                         isActive
-                                            ? "bg-[#3f6ad8] text-white shadow-md shadow-blue-100"
-                                            : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                                            ? "bg-mc-stone-dark text-white border-b-2 border-mc-diamond"
+                                            : "text-gray-400 hover:bg-mc-stone-dark hover:text-white"
                                     }`}
                                 >
                                     <Icon size={15} />

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Press_Start_2P, VT323 } from "next/font/google";
 import "./globals.css";
 import { CookiesProvider } from "next-client-cookies/server";
 import { AppProvider } from "@/providers/AppContext";
@@ -12,6 +12,20 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
     variable: "--font-geist-mono",
     subsets: ["latin"],
+});
+
+const minecraftFont = Press_Start_2P({
+    weight: "400",
+    variable: "--font-minecraft",
+    subsets: ["latin", "latin-ext"],
+    display: "swap",
+});
+
+const minecraftFallbackFont = VT323({
+    weight: "400",
+    variable: "--font-minecraft-fallback",
+    subsets: ["latin", "vietnamese"],
+    display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -27,7 +41,7 @@ export default function RootLayout({
     return (
         <html
             lang="en"
-            className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+            className={`${geistSans.variable} ${geistMono.variable} ${minecraftFont.variable} ${minecraftFallbackFont.variable} h-full antialiased`}
         >
             <body className="min-h-full flex flex-col">
                 <AppProvider>

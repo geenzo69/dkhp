@@ -18,7 +18,7 @@ export default async function Home() {
     }
 
     return (
-        <div className="min-h-screen bg-[#f1f4f6] text-slate-700 font-sans flex flex-col">
+        <div className="min-h-screen bg-mc-stone-dark text-white font-sans flex flex-col" style={{ backgroundImage: "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYElEQVQ4y2NkYGD4z0AAMIIwH2BkYGDEp5iREU0zIx4DmDE0g8QZ0OQwYPMByEaYATBBkGEYgKwBZhCGNqgGMAyBGIAMxDAMYAQxDAEYgAzEMABkBmEYgAzEMAA0R6AbAAAsuA4/Pz45sQAAAABJRU5ErkJggg==')", backgroundSize: '64px', imageRendering: 'pixelated' }}>
             <Header
                 user={user}
             />
@@ -27,7 +27,7 @@ export default async function Home() {
                 <main className="flex-1 p-6 md:p-8 overflow-x-hidden">
                     {
                         !user ? <Landing /> : (
-                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 animate-in fade-in duration-500">
+                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
                                 <CourseList />
     
                                 <div className="xl:col-span-4 space-y-6">

@@ -9,25 +9,25 @@ export default function SystemLogs() {
 
     return (
         <Card title="Nhật ký hệ thống" icon={History} color="#f7b924">
-            <div className="p-4 space-y-4 max-h-75 overflow-y-auto">
+            <div className="p-4 space-y-4 max-h-75 overflow-y-auto mc-item-slot bg-black/60 m-4 border-none shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
                 {logs.length > 0 ? (
                     logs.map((log) => (
                         <div
                             key={log.id}
-                            className="flex gap-3 text-xs leading-relaxed animate-in slide-in-from-left-2 duration-300 text-left"
+                            className="flex gap-3 text-xs leading-relaxed text-left"
                         >
-                            <span className="text-slate-400 font-mono shrink-0 font-bold">
+                            <span className="text-gray-400 font-minecraft shrink-0 mc-text-shadow">
                                 [{log.time}]
                             </span>
                             <span
-                                className={`font-semibold ${
+                                className={`font-minecraft mc-text-shadow ${
                                     log.type === "error"
-                                        ? "text-red-500"
+                                        ? "text-mc-redstone"
                                         : log.type === "success"
-                                          ? "text-emerald-600"
+                                          ? "text-mc-grass"
                                           : log.type === "warning"
-                                            ? "text-amber-500"
-                                            : "text-[#3f6ad8]"
+                                            ? "text-mc-gold"
+                                            : "text-mc-diamond"
                                 }`}
                             >
                                 {log.message}
@@ -36,8 +36,8 @@ export default function SystemLogs() {
                     ))
                 ) : (
                     <div className="text-center py-10">
-                        <Info size={24} className="mx-auto text-slate-200 mb-2" />
-                        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                        <Info size={24} className="mx-auto text-gray-500 mb-2" />
+                        <p className="text-[10px] font-minecraft text-gray-400 uppercase mc-text-shadow">
                             Chưa có hoạt động
                         </p>
                     </div>

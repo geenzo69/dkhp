@@ -66,20 +66,20 @@ export default function ResultSummary() {
     });
 
     return (
-        <div className="bg-linear-to-br from-[#3f6ad8] to-[#2c4a96] rounded-xl p-6 text-white shadow-xl">
-            <h3 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-6">
+        <div className="mc-panel bg-mc-stone p-6 text-white">
+            <h3 className="text-[10px] font-minecraft uppercase mc-text-shadow mb-6">
                 Kết quả tạm tính
             </h3>
             <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="bg-white/10 p-4 rounded-lg border border-white/10">
-                    <p className="text-2xl font-black">{courses.length + plannedCourses.length}</p>
-                    <p className="text-[10px] font-bold uppercase opacity-60">
+                <div className="mc-item-slot p-4 text-center">
+                    <p className="text-2xl font-minecraft mc-text-shadow">{courses.length + plannedCourses.length}</p>
+                    <p className="text-[10px] font-minecraft uppercase text-gray-300 mt-2">
                         Môn học
                     </p>
                 </div>
-                <div className="bg-white/10 p-4 rounded-lg border border-white/10">
-                    <p className="text-2xl font-black">{courses.map((v) => v.dkmh_tu_dien_hoc_phan_so_tin_chi).reduce((a, b) => a + b, 0)}</p>
-                    <p className="text-[10px] font-bold uppercase opacity-60">
+                <div className="mc-item-slot p-4 text-center">
+                    <p className="text-2xl font-minecraft mc-text-shadow text-mc-gold">{courses.map((v) => v.dkmh_tu_dien_hoc_phan_so_tin_chi).reduce((a, b) => a + b, 0)}</p>
+                    <p className="text-[10px] font-minecraft uppercase text-gray-300 mt-2">
                         Tín chỉ
                     </p>
                 </div>
@@ -93,20 +93,20 @@ export default function ResultSummary() {
                             .map((course) => (
                                 <div
                                     key={`api-${course.dkmh_tu_dien_hoc_phan_ma}`}
-                                    className="flex flex-col gap-1 bg-emerald-500/20 py-2 px-3 rounded text-[11px] border border-emerald-500/30"
+                                    className="flex flex-col gap-1 mc-item-slot py-2 px-3 text-[11px]"
                                 >
                                     <div className="flex items-center justify-between">
-                                        <span className="truncate font-bold text-emerald-100">
+                                        <span className="truncate font-bold text-mc-grass mc-text-shadow">
                                             {
                                                 course.dkmh_tu_dien_hoc_phan_ten_vn
                                             }
                                         </span>
-                                        <span className="text-[9px] bg-emerald-500 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">
+                                        <span className="text-[9px] bg-mc-grass text-white px-1.5 py-0.5 font-minecraft uppercase mc-text-shadow">
                                             Đã đăng ký
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] opacity-60 text-emerald-100">
-                                        <span className="font-bold">
+                                    <div className="flex items-center gap-2 text-[10px] text-gray-300 font-minecraft">
+                                        <span>
                                             Nhóm {course.dkmh_nhom_hoc_phan_ma}
                                         </span>
                                         <span>•</span>
@@ -123,10 +123,10 @@ export default function ResultSummary() {
                         {plannedCourses.map(({ course, group }) => (
                             <div
                                 key={course.dkmh_tu_dien_hoc_phan_ma}
-                                className="flex flex-col gap-1 bg-white/5 py-2 px-3 rounded text-[11px]"
+                                className="flex flex-col gap-1 mc-item-slot py-2 px-3 text-[11px]"
                             >
                                 <div className="flex items-center justify-between">
-                                    <span className="truncate font-bold text-white/90">
+                                    <span className="truncate font-bold text-white mc-text-shadow">
                                         {course.dkmh_tu_dien_hoc_phan_ten_vn}
                                     </span>
                                     <button
@@ -144,13 +144,13 @@ export default function ResultSummary() {
                                                 "warning",
                                             );
                                         }}
-                                        className="text-white/40 hover:text-red-300 transition-colors"
+                                        className="text-gray-400 hover:text-mc-redstone"
                                     >
                                         <Trash2 size={14} />
                                     </button>
                                 </div>
-                                <div className="flex items-center gap-2 text-[10px] opacity-60">
-                                    <span className="bg-white/20 px-1 rounded font-bold">
+                                <div className="flex items-center gap-2 text-[10px] text-gray-300 font-minecraft">
+                                    <span className="bg-black/40 px-1">
                                         Nhóm {group.dkmh_nhom_hoc_phan_ma}
                                     </span>
                                     <span>•</span>
@@ -185,7 +185,7 @@ export default function ResultSummary() {
                                 }}
                                 disabled={isRegister}
                                 aria-busy={isRegister}
-                                className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded shadow-lg shadow-emerald-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95 disabled:cursor-not-allowed disabled:bg-emerald-500/60 disabled:hover:bg-emerald-500/60 disabled:active:scale-100"
+                                className="flex items-center justify-center gap-2 mc-button !bg-mc-grass text-white py-4 uppercase text-[10px] font-minecraft mc-text-shadow disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isRegister ? (
                                     <>
@@ -203,7 +203,7 @@ export default function ResultSummary() {
                                 onClick={(() => {
                                     setShowScheduleUI(true);
                                 })}
-                                className="bg-amber-500 hover:bg-amber-400 text-white font-bold py-4 rounded shadow-lg shadow-amber-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95"
+                                className="mc-button !bg-mc-gold text-white py-4 uppercase text-[10px] font-minecraft mc-text-shadow"
                             >
                                 Lên lịch tự động
                             </button>
@@ -211,11 +211,11 @@ export default function ResultSummary() {
                     ) : (
                         <div
                             aria-busy={isSchedule}
-                            className={`bg-white/5 p-4 rounded-lg border border-white/10 space-y-3 animate-in fade-in zoom-in-95 duration-200 ${
-                                isSchedule ? "animate-pulse opacity-80" : ""
+                            className={`mc-item-slot p-4 space-y-3 ${
+                                isSchedule ? "opacity-80" : ""
                             }`}
                         >
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">
+                            <p className="text-[10px] font-minecraft uppercase text-gray-300 mc-text-shadow">
                                 Chọn thời gian đăng ký
                             </p>
                             <input
@@ -225,7 +225,7 @@ export default function ResultSummary() {
                                 onChange={(e) =>
                                     setScheduleTime(e.target.value)
                                 }
-                                className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-sm text-white focus:outline-hidden focus:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="w-full bg-black/40 border-2 border-black px-3 py-2 text-sm text-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 font-minecraft"
                             />
                             <div className="grid grid-cols-2 gap-2">
                                 <button
@@ -246,7 +246,7 @@ export default function ResultSummary() {
                                         })
                                     }}
                                     disabled={isSchedule || !scheduleTime}
-                                    className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold py-2.5 rounded text-[10px] uppercase tracking-wider disabled:cursor-not-allowed disabled:bg-amber-500/60 disabled:hover:bg-amber-500/60"
+                                    className="flex items-center justify-center gap-2 mc-button !bg-mc-gold text-white py-2.5 text-[10px] font-minecraft uppercase mc-text-shadow disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {isSchedule ? (
                                         <>
@@ -269,7 +269,7 @@ export default function ResultSummary() {
                                         setShowScheduleUI(false);
                                     }}
                                     disabled={isSchedule}
-                                    className="bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded text-[10px] uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="mc-button !bg-mc-stone-dark text-white py-2.5 text-[10px] font-minecraft uppercase mc-text-shadow disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     Hủy
                                 </button>
