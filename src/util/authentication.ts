@@ -144,7 +144,7 @@ export async function getUser(authToken?: string) {
 }
 
 export async function getToken(mssv: string, password: string) {
-    return unstable_cache(async () => {
+    return unstable_cache(async (mssv: string, password: string) => {
         if (!mssv?.trim() || !password) {
             throw new Error("MSSV hoặc mật khẩu sai");
         }
@@ -368,5 +368,5 @@ export async function getToken(mssv: string, password: string) {
     }, [], {
         revalidate: 3600,
         tags: [`user/${mssv}/${password}`]
-    })();
+    })(mssv, password);
 }
