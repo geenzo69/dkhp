@@ -1,6 +1,5 @@
 import { generateToken, getToken } from "@/util/authentication";
 import { decode, JwtPayload, verify } from "jsonwebtoken";
-import { updateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { sendReportEmail, CourseResult } from "@/util/email";
@@ -49,7 +48,6 @@ export async function POST(request: Request) {
             );
         }
 
-        // Extract MSSV from authToken as early as possible for email notification
         try {
             const payload = decode(authToken) as JwtPayload;
             if (payload?.mssv) {
@@ -58,7 +56,7 @@ export async function POST(request: Request) {
         } catch {}
 
         const { dkmhToken, mssv: verifiedMssv } = await getValidDkmhToken(authToken);
-        mssv = verifiedMssv; // override with verified mssv
+        mssv = verifiedMssv;
 
         const res = await fetch(
             "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/sinhvien/dangkyhocphan",
@@ -78,7 +76,6 @@ export async function POST(request: Request) {
 
         const json = await res.json();
 
-        // Parse results course-by-course based on the data list structure
         const resultDataList = Array.isArray(json.data) ? json.data : [];
         const resultMap = new Map<string, { trang_thai: string; ly_do?: string }>();
         resultDataList.forEach((item: any) => {

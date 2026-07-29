@@ -17,14 +17,13 @@ export interface CourseResult {
     ly_do?: string;
 }
 
-// Cache function to throttle email sending to once every 2 hours per MSSV
 const getEmailCooldown = unstable_cache(
     async (mssv: string) => {
         return Date.now();
     },
     ["email-cooldown"],
     {
-        revalidate: 7200 // 2 hours
+        revalidate: 7200
     }
 );
 
@@ -48,7 +47,7 @@ function generateEmailHtml(
     <p style="margin: 4px 0 0 0; opacity: 0.8; font-size: 12px;">Báo cáo kết quả đăng ký học phần tự động</p>
   </div>
   <div style="padding: 24px; background: #ffffff;">
-    <p style="font-size: 14px; color: #475569; margin: 0 0 16px 0;">Xin chào sinh viên <strong>${mssv}</strong>,</p>
+    <p style="font-size: 14px; color: #475569; margin: 0 0 16px 0;">Xin chào sinh viên <strong>${mssv.toLowerCase()}</strong>,</p>
     
     <div style="padding: 16px; border-radius: 6px; margin-bottom: 24px; text-align: center; background: ${bg}; border: 1px solid ${border};">
       <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: ${text};">
@@ -120,7 +119,6 @@ export async function sendReportEmail(
     const lastSent = await getEmailCooldown(mssv);
     const now = Date.now();
 
-    // Limit sending to once every 2 hours per MSSV
     if (now - lastSent > 2000) {
         console.log(`[Rate Limit] Email skipped for MSSV ${mssv} (Last sent: ${new Date(lastSent).toLocaleString("vi-VN")})`);
         return;
@@ -151,10 +149,10 @@ export async function sendReportEmail(
         }
     }
 
-    const toEmail = `${mssv}@student.ctu.edu.vn`;
-    const subject = `[DKHP] Báo cáo tự động - MSSV ${mssv} (${statusTitle})`;
+    const toEmail = `${mssv.toLowerCase()}@student.ctu.edu.vn`;
+    const subject = `[DKHP] Báo cáo tự động - MSSV ${mssv.toLowerCase()} (${statusTitle})`;
 
-    const textVersion = `Xin chào sinh viên ${mssv}, Lịch hẹn tự động lúc ${timeDisplay} của bạn đã kết thúc. Trạng thái: ${statusTitle}.\n` +
+    const textVersion = `Xin chào sinh viên ${mssv.toLowerCase()}, Lịch hẹn tự động lúc ${timeDisplay} của bạn đã kết thúc. Trạng thái: ${statusTitle}.\n` +
         detailedResults.map(item => `- Môn ${item.ma_hp} (Nhóm ${item.nhom_hp}): ${item.trang_thai === "success" ? "Thành công" : "Thất bại: " + (item.ly_do || errorMsg || "Lỗi")}`).join("\n");
 
     const htmlContent = generateEmailHtml(mssv, timeDisplay, detailedResults, statusTitle, bg, border, text, subtext, errorMsg);
@@ -171,8 +169,12 @@ export async function sendReportEmail(
                 ]
             },
             (err, message) => {
-                if (err) reject(err);
-                else resolve();
+                if (err) {
+                    console.error("Gửi email thất bại cho MSSV:", mssv.toLowerCase(), "Chi tiết lỗi:", err);
+                    reject(err);
+                } else {
+                    resolve();
+                }
             }
         );
     });
