@@ -114,7 +114,15 @@ export default function LoginPage({
                             </div>
                         )}
 
-                        <form className="space-y-5">
+                        <form
+                            className="space-y-5"
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                if (!isSubmitting) {
+                                    execute({ mssv, password });
+                                }
+                            }}
+                        >
                             <div>
                                 <label
                                     htmlFor="mssv"
@@ -160,8 +168,7 @@ export default function LoginPage({
 
                             <button
                                 disabled={isSubmitting}
-                                type="button"
-                                onClick={() => execute({ mssv, password })}
+                                type="submit"
                                 className="mt-4 flex w-full items-center justify-center gap-2 rounded bg-[#3f6ad8] py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-blue-200 transition-all hover:bg-[#3458b6] disabled:cursor-wait disabled:opacity-70"
                             >
                                 {isExecuting ? (

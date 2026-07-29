@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, Calendar, Clock, Info } from "lucide-react";
 import { useApp } from "@/providers/AppContext";
-import { useAction } from "next-safe-action/hooks";
-import getCourses from "@/app/actions/getCourses";
 
 const DAYS = [
     { label: "Thứ 2", value: 2 },
@@ -145,46 +143,7 @@ function ScheduleSkeleton() {
 
 export default function Schedule() {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
-    const { plannedCourses, courses, setCourses, notify } = useApp();
-
-    const { execute, isExecuting } = useAction(getCourses, {
-        onError: ({ error }) => {
-            if (error.serverError) {
-                notify(error.serverError, "error");
-            } else if (error.validationErrors) {
-                const messages = Object.values(error.validationErrors)
-                    .flatMap((err: unknown) => {
-                        if (Array.isArray(err)) return err;
-                        if (
-                            err &&
-                            typeof err === "object" &&
-                            "_errors" in err
-                        ) {
-                            const errors = (err as { _errors?: unknown })
-                                ._errors;
-                            return Array.isArray(errors) ? errors : [];
-                        }
-
-                        return [];
-                    })
-                    .join(", ");
-                notify(messages || "Validation error!", "error");
-            } else {
-                notify("Đã có lỗi xảy ra", "error");
-            }
-        },
-        onSuccess: ({ data }) => {
-            if (!data) {
-                return;
-            }
-
-            setCourses(data);
-        }
-    });
-
-    useEffect(() => {
-        execute();
-    }, [execute]);
+    const { plannedCourses, courses, isLoadingCourses } = useApp();
 
     const allBlocks = useMemo(() => {
         const list: ParsedSlot[] = [];
@@ -255,7 +214,7 @@ export default function Schedule() {
             (block) => block.day === day && block.startPeriod === period,
         );
 
-    if (isExecuting) {
+    if (isLoadingCourses) {
         return <ScheduleSkeleton />;
     }
 

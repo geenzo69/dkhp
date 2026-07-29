@@ -65,3 +65,25 @@ export async function createSchedule(data: any) {
 
     updateTag("schedules");
 }
+
+export async function deleteSchedule() {
+    let user;
+
+    try {
+        user = await getUser();
+    } catch(err) {
+        return;
+    }
+
+    if (!user) {
+        return;
+    }
+
+    const schedule = await getSchedule();
+    if (!schedule) {
+        throw new Error("Không tìm thấy lịch hẹn để xóa");
+    }
+
+    await client.schedules.delete(schedule.scheduleId);
+    updateTag("schedules");
+}

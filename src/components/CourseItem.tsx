@@ -168,21 +168,15 @@ export default function CourseItem({
                     {active && (
                         <button
                             onClick={() => {
-                                if (
-                                    plannedCourses.some(
-                                        (r) =>
-                                            r.course.dkmh_tu_dien_hoc_phan_ma ===
-                                            course.dkmh_tu_dien_hoc_phan_ma,
-                                    )
-                                ) {
-                                    notify("Bạn đã đăng ký học phần này rồi!", "warning");
+                                if (isFromAPI) {
+                                    notify("Học phần này đã được đăng ký trên hệ thống!", "warning");
                                     return;
                                 }
 
                                 setSelectedCourseForModal(course);
                             }}
                             className="text-[10px] font-black uppercase text-slate-400 hover:text-[#3f6ad8] transition-colors p-2 rounded-lg hover:bg-slate-100"
-                            title="Xem các nhóm khác của học phần này"
+                            title="Xem các nhóm khác / Đổi nhóm"
                         >
                             <Info size={16} />
                         </button>

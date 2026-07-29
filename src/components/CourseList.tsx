@@ -4,40 +4,15 @@ import { useEffect, useState, useRef } from "react";
 import { Search, Calendar } from "lucide-react";
 import Card from "./Card";
 import RegistrationModal from "./RegistrationModal";
-import { useAction } from "next-safe-action/hooks";
 import { useApp } from "@/providers/AppContext";
-import getCourses from "@/app/actions/getCourses";
 import CourseItem from "./CourseItem";
 import Course from "@/types/Course";
 import LopHocPhan from "@/types/LopHocPhan";
+import { checkTkbConflict } from "@/util/format";
 
 export default function CourseList() {
-    const { notify, addLog, setPlannedCourses, plannedCourses, courses, setCourses } = useApp();
+    const { notify, addLog, setPlannedCourses, plannedCourses, courses, isLoadingCourses } = useApp();
     const [searchTerm, setSearchTerm] = useState("");
-
-    const { execute, isExecuting } = useAction(getCourses, {
-        onError: ({ error }) => {
-            if (error.serverError) {
-                notify(error.serverError, "error");
-            } else if (error.validationErrors) {
-                const messages = Object.values(error.validationErrors)
-                    .flatMap((err: any) =>
-                        Array.isArray(err) ? err : err?._errors ?? []
-                    )
-                    .join(", ");
-                notify(messages || "Validation error!", "error");
-            } else {
-                notify("Đã có lỗi xảy ra", "error");
-            }
-        },
-        onSuccess: ({ data }) => {
-            if (!data) {
-                return;
-            }
-
-            setCourses(data);
-        }
-    });
 
     const filteredCourses = courses
         ? courses.filter(
@@ -54,40 +29,69 @@ export default function CourseList() {
         useState<Course | null>(null);
     const skeletonRows = Array.from({ length: 5 });
 
-    useEffect(() => {
-        execute()
-    }, []);
-
     const handleConfirmRegistration = (group: LopHocPhan) => {
         if (!selectedCourseForModal) return;
     
-        const conflict = plannedCourses.find(
+        let conflictCourse: Course | undefined;
+
+        const plannedConflict = plannedCourses.find(
             (r) =>
-                r.group.dkmh_tu_dien_lop_hoc_phan_tkb ===
-                group.dkmh_tu_dien_lop_hoc_phan_tkb,
+                r.course.dkmh_tu_dien_hoc_phan_ma !== selectedCourseForModal.dkmh_tu_dien_hoc_phan_ma &&
+                checkTkbConflict(r.group.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb)
         );
-        if (conflict) {
+        if (plannedConflict) {
+            conflictCourse = plannedConflict.course;
+        } else {
+            const registeredConflict = courses.find(
+                (c) =>
+                    c.trang_thai_dang_ky === 1 &&
+                    c.dkmh_tu_dien_hoc_phan_ma !== selectedCourseForModal.dkmh_tu_dien_hoc_phan_ma &&
+                    checkTkbConflict(c.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb)
+            );
+            if (registeredConflict) {
+                conflictCourse = registeredConflict;
+            }
+        }
+
+        if (conflictCourse) {
             addLog(
-                `Trùng lịch: ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn} vs ${conflict.course.dkmh_tu_dien_hoc_phan_ten_vn}`,
+                `Trùng lịch: ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn} vs ${conflictCourse.dkmh_tu_dien_hoc_phan_ten_vn}`,
                 "error",
             );
             notify(
-                `Lịch học đã bị trùng với môn ${conflict.course.dkmh_tu_dien_hoc_phan_ten_vn}!`,
+                `Lịch học đã bị trùng với môn ${conflictCourse.dkmh_tu_dien_hoc_phan_ten_vn}!`,
                 "error",
             );
             return;
         }
     
-        setPlannedCourses([
-            ...plannedCourses,
-            { course: selectedCourseForModal, group },
-        ]);
+        const existingIndex = plannedCourses.findIndex(
+            (r) => r.course.dkmh_tu_dien_hoc_phan_ma === selectedCourseForModal.dkmh_tu_dien_hoc_phan_ma
+        );
+
+        let newPlannedCourses;
+        const isEdit = existingIndex > -1;
+        if (isEdit) {
+            newPlannedCourses = [...plannedCourses];
+            newPlannedCourses[existingIndex] = { course: selectedCourseForModal, group };
+        } else {
+            newPlannedCourses = [
+                ...plannedCourses,
+                { course: selectedCourseForModal, group },
+            ];
+        }
+
+        setPlannedCourses(newPlannedCourses);
         addLog(
-            `Đã đăng ký: ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn} (Nhóm ${group.dkmh_nhom_hoc_phan_ma})`,
+            isEdit
+                ? `Đã đổi sang Nhóm ${group.dkmh_nhom_hoc_phan_ma}: ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn}`
+                : `Đã đăng ký: ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn} (Nhóm ${group.dkmh_nhom_hoc_phan_ma})`,
             "info",
         );
         notify(
-            `Đã chọn học phần ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn} thành công!`,
+            isEdit
+                ? `Đã đổi sang nhóm ${group.dkmh_nhom_hoc_phan_ma} thành công!`
+                : `Đã chọn học phần ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn} thành công!`,
             "success",
         );
         setSelectedCourseForModal(null);
@@ -135,8 +139,8 @@ export default function CourseList() {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y relative" aria-busy={isExecuting}>
-                            {isExecuting
+                        <tbody className="divide-y relative" aria-busy={isLoadingCourses}>
+                            {isLoadingCourses
                                 ? skeletonRows.map((_, index) => (
                                     <tr key={`course-skeleton-${index}`} className="animate-pulse">
                                         <td className="px-6 py-5">

@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CookiesProvider } from "next-client-cookies/server";
 import { AppProvider } from "@/providers/AppContext";
-import Header from "@/components/Header";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -33,11 +32,7 @@ export default function RootLayout({
             <body className="min-h-full flex flex-col">
                 <AppProvider>
                     <CookiesProvider>
-                        <div className="min-h-screen bg-[#f1f4f6] text-slate-700 font-sans flex flex-col">
-                            <Header />
-
-                            {children}
-                        </div>
+                        {children}
                     </CookiesProvider>
                 </AppProvider>
             </body>

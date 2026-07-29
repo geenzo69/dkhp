@@ -2,7 +2,7 @@
 
 import { getUser } from "@/util/authentication";
 import action from "@/util/safe-action";
-import { createSchedule } from "@/util/schedule";
+import { createSchedule, getSchedule } from "@/util/schedule";
 import { cookies } from "next/headers";
 import z from "zod";
 
@@ -21,6 +21,11 @@ const createScheduleAction = action.inputSchema(z.object({
 
     if (!user) {
         throw new Error("Bạn phải đăng nhập!");
+    }
+
+    const existing = await getSchedule();
+    if (existing) {
+        throw new Error("Lịch hẹn đăng ký học phần đã tồn tại! Vui lòng xóa lịch cũ trước.");
     }
 
     try {

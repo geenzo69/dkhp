@@ -4,13 +4,41 @@ import { Loader2, Trash2 } from "lucide-react";
 import { useApp } from "@/providers/AppContext";
 import { useAction } from "next-safe-action/hooks";
 import registerCourse from "@/app/actions/registerCourse";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import createSchedule from "@/app/actions/createSchedule";
+import getScheduleAction from "@/app/tu-dong-dang-ky/actions/getSchedule";
+import deleteScheduleAction from "@/app/actions/deleteSchedule";
 
 export default function ResultSummary() {
-    const { notify, addLog, setPlannedCourses, plannedCourses, courses } = useApp();
+    const { notify, addLog, setPlannedCourses, plannedCourses, courses, isLoadingCourses } = useApp();
     const [showScheduleUI, setShowScheduleUI] = useState(false);
     const [scheduleTime, setScheduleTime] = useState("");
+    const [hasExistingSchedule, setHasExistingSchedule] = useState(false);
+
+    const { execute: checkSchedule } = useAction(getScheduleAction, {
+        onSuccess: ({ data }) => {
+            if (data?.time) {
+                setHasExistingSchedule(true);
+            } else {
+                setHasExistingSchedule(false);
+            }
+        }
+    });
+
+    const { execute: executeDelete, isExecuting: isDeleting } = useAction(deleteScheduleAction, {
+        onError: ({ error }) => {
+            notify(getActionErrorMessage(error), "error");
+        },
+        onSuccess: () => {
+            notify("Đã hủy lịch đăng ký tự động thành công!", "success");
+            addLog("Hệ thống: Đã xóa lịch đăng ký tự động.", "warning");
+            checkSchedule();
+        }
+    });
+
+    useEffect(() => {
+        checkSchedule();
+    }, []);
     const selectedCoursesData = plannedCourses.map((r) => ({
         dkmh_tu_dien_hoc_phan_ma: r.course.dkmh_tu_dien_hoc_phan_ma,
         dkmh_nhom_hoc_phan_ma: r.group.dkmh_nhom_hoc_phan_ma,
@@ -62,6 +90,7 @@ export default function ResultSummary() {
 
             notify("Lên kế hoạch thành công!", "success");
             setShowScheduleUI(false);
+            checkSchedule();
         }
     });
 
@@ -72,13 +101,26 @@ export default function ResultSummary() {
             </h3>
             <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="bg-white/10 p-4 rounded-lg border border-white/10">
-                    <p className="text-2xl font-black">{courses.length + plannedCourses.length}</p>
+                    <p className="text-2xl font-black">
+                        {isLoadingCourses ? (
+                            <span className="inline-block h-8 w-12 bg-white/20 rounded animate-pulse" />
+                        ) : (
+                            courses.filter((c) => c.trang_thai_dang_ky === 1).length + plannedCourses.length
+                        )}
+                    </p>
                     <p className="text-[10px] font-bold uppercase opacity-60">
                         Môn học
                     </p>
                 </div>
                 <div className="bg-white/10 p-4 rounded-lg border border-white/10">
-                    <p className="text-2xl font-black">{courses.map((v) => v.dkmh_tu_dien_hoc_phan_so_tin_chi).reduce((a, b) => a + b, 0)}</p>
+                    <p className="text-2xl font-black">
+                        {isLoadingCourses ? (
+                            <span className="inline-block h-8 w-12 bg-white/20 rounded animate-pulse" />
+                        ) : (
+                            courses.filter((c) => c.trang_thai_dang_ky === 1).reduce((sum, c) => sum + c.dkmh_tu_dien_hoc_phan_so_tin_chi, 0) +
+                            plannedCourses.reduce((sum, p) => sum + p.course.dkmh_tu_dien_hoc_phan_so_tin_chi, 0)
+                        )}
+                    </p>
                     <p className="text-[10px] font-bold uppercase opacity-60">
                         Tín chỉ
                     </p>
@@ -86,7 +128,16 @@ export default function ResultSummary() {
             </div>
 
             <div className="space-y-3 mb-8 max-h-48 overflow-y-auto scrollbar-hide text-left">
-                {
+                {isLoadingCourses ? (
+                    <div className="space-y-3 animate-pulse">
+                        {Array.from({ length: 2 }).map((_, index) => (
+                            <div key={`summary-skeleton-${index}`} className="flex flex-col gap-2 bg-white/5 py-2 px-3 rounded">
+                                <div className="h-4 w-32 bg-white/20 rounded" />
+                                <div className="h-3 w-20 bg-white/10 rounded" />
+                            </div>
+                        ))}
+                    </div>
+                ) : (
                     <>
                         {courses
                             ?.filter((c) => c.trang_thai_dang_ky === 1)
@@ -164,7 +215,7 @@ export default function ResultSummary() {
                             </div>
                         ))}
                     </>
-                }
+                )}
             </div>
 
             {plannedCourses.length > 0 && (
@@ -199,14 +250,28 @@ export default function ResultSummary() {
                                     "Đăng ký ngay"
                                 )}
                             </button>
-                            <button
-                                onClick={(() => {
-                                    setShowScheduleUI(true);
-                                })}
-                                className="bg-amber-500 hover:bg-amber-400 text-white font-bold py-4 rounded shadow-lg shadow-amber-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95"
-                            >
-                                Lên lịch tự động
-                            </button>
+                            {hasExistingSchedule ? (
+                                <button
+                                    onClick={() => {
+                                        if (confirm("Bạn có chắc chắn muốn hủy lịch đăng ký tự động đã hẹn?")) {
+                                            executeDelete();
+                                        }
+                                    }}
+                                    disabled={isDeleting}
+                                    className="bg-red-500 hover:bg-red-400 text-white font-bold py-4 rounded shadow-lg shadow-red-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95 disabled:bg-red-500/60 disabled:cursor-wait"
+                                >
+                                    {isDeleting ? "Đang hủy..." : "Hủy lịch hẹn"}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={(() => {
+                                        setShowScheduleUI(true);
+                                    })}
+                                    className="bg-amber-500 hover:bg-amber-400 text-white font-bold py-4 rounded shadow-lg shadow-amber-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95"
+                                >
+                                    Lên lịch tự động
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div
@@ -280,4 +345,19 @@ export default function ResultSummary() {
             )}
         </div>
     );
+}
+
+function getActionErrorMessage(error: any) {
+    if (error.serverError) {
+        return error.serverError;
+    }
+    if (error.validationErrors) {
+        const messages = Object.values(error.validationErrors)
+            .flatMap((err: any) =>
+                Array.isArray(err) ? err : err?._errors ?? []
+            )
+            .join(", ");
+        return messages || "Validation error!";
+    }
+    return "Đã có lỗi xảy ra";
 }

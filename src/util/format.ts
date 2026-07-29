@@ -44,3 +44,74 @@ export function formatTkb(tkb: string | null | undefined): string {
         return tkb;
     }
 }
+
+export function checkTkbConflict(tkb1: string | null | undefined, tkb2: string | null | undefined): boolean {
+    if (!tkb1 || !tkb2) return false;
+
+    const parseTkb = (tkb: string) => {
+        const segments = tkb.split(" ");
+        const slots: { index: number; weeks: string }[] = [];
+        segments.forEach(segment => {
+            const parts = segment.split("_");
+            if (parts.length < 2) return;
+            const [weeksStr, indicesStr] = parts;
+            const indices = indicesStr.split(";").map(n => parseInt(n)).filter(n => !isNaN(n));
+            indices.forEach(idx => {
+                slots.push({ index: idx, weeks: weeksStr });
+            });
+        });
+        return slots;
+    };
+
+    const getWeeksSet = (w: string): Set<number> => {
+        const weeks = new Set<number>();
+        if (/^\d+-\d+$/.test(w)) {
+            const [start, end] = w.split("-").map(Number);
+            for (let i = start; i <= end; i++) {
+                weeks.add(i);
+            }
+            return weeks;
+        }
+        
+        if (w.length > 5 && /^\d+$/.test(w) && w.length % 2 === 0) {
+            for (let i = 0; i < w.length; i += 2) {
+                const weekNum = parseInt(w.substring(i, i + 2), 10);
+                if (!isNaN(weekNum)) {
+                    weeks.add(weekNum);
+                }
+            }
+            return weeks;
+        }
+
+        for (let i = 0; i < w.length; i++) {
+            const char = w[i];
+            if (char !== "-") {
+                weeks.add(i + 1);
+            }
+        }
+        return weeks;
+    };
+
+    const weeksOverlap = (w1: string, w2: string): boolean => {
+        const set1 = getWeeksSet(w1);
+        const set2 = getWeeksSet(w2);
+        for (const wk of set1) {
+            if (set2.has(wk)) return true;
+        }
+        return false;
+    };
+
+    const slots1 = parseTkb(tkb1);
+    const slots2 = parseTkb(tkb2);
+
+    for (const s1 of slots1) {
+        for (const s2 of slots2) {
+            if (s1.index === s2.index) {
+                if (weeksOverlap(s1.weeks, s2.weeks)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}

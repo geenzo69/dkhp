@@ -1,10 +1,11 @@
 "use client";
 
-import { X, Clock, Users, BookOpen, CheckCircle2 } from "lucide-react";
-import { formatTkb } from "@/util/format";
+import { X, Clock, Users, BookOpen, CheckCircle2, AlertTriangle } from "lucide-react";
+import { formatTkb, checkTkbConflict } from "@/util/format";
 import { useState } from "react";
 import Course from "@/types/Course";
 import LopHocPhan from "@/types/LopHocPhan";
+import { useApp } from "@/providers/AppContext";
 
 interface RegistrationModalProps {
     course: Course;
@@ -17,6 +18,7 @@ export default function RegistrationModal({
     onClose,
     onConfirm,
 }: RegistrationModalProps) {
+    const { plannedCourses, courses } = useApp();
     const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(
         null,
     );
@@ -78,17 +80,32 @@ export default function RegistrationModal({
                                 group.dkmh_tu_dien_lop_hoc_phan_si_so_con_lai <=
                                 0;
 
+                            let hasConflict = plannedCourses.some(
+                                (r) =>
+                                    r.course.dkmh_tu_dien_hoc_phan_ma !== course.dkmh_tu_dien_hoc_phan_ma &&
+                                    checkTkbConflict(r.group.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb)
+                            );
+
+                            if (!hasConflict) {
+                                hasConflict = courses.some(
+                                    (c) =>
+                                        c.trang_thai_dang_ky === 1 &&
+                                        c.dkmh_tu_dien_hoc_phan_ma !== course.dkmh_tu_dien_hoc_phan_ma &&
+                                        checkTkbConflict(c.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb)
+                                );
+                            }
+
                             return (
                                 <button
                                     key={group.key}
-                                    disabled={isFull}
+                                    disabled={isFull || hasConflict}
                                     onClick={() =>
                                         setSelectedGroupKey(group.key)
                                     }
                                     className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center justify-between group ${
                                         isSelected
                                             ? "border-[#3f6ad8] bg-blue-50/50 shadow-md"
-                                            : isFull
+                                            : (isFull || hasConflict)
                                               ? "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
                                               : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
                                     }`}
@@ -144,6 +161,12 @@ export default function RegistrationModal({
                                                     chỗ
                                                 </span>
                                             </div>
+                                            {hasConflict && (
+                                                <div className="flex items-center gap-1.5 text-xs text-red-500 font-bold">
+                                                    <AlertTriangle size={12} />
+                                                    <span>Trùng lịch</span>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="mt-2 text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
                                             Mã lớp:{" "}
