@@ -11,6 +11,9 @@ importers:
       '@upstash/qstash':
         specifier: ^2.11.1
         version: 2.11.1
+      emailjs:
+        specifier: ^5.0.2
+        version: 5.0.2(typescript@5.9.3)
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -965,6 +968,15 @@ packages:
 
   electron-to-chromium@1.5.334:
     resolution: {integrity: sha512-mgjZAz7Jyx1SRCwEpy9wefDS7GvNPazLthHg8eQMJ76wBdGQQDW33TCrUTvQ4wzpmOrv2zrFoD3oNufMdyMpog==}
+
+  emailjs@5.0.2:
+    resolution: {integrity: sha512-0ihvr8N6WFFgnJRp5aMnmfEuKtIza5V/tHWErQbHzoVb4UJnpqTl/V0hLbfYKIzc6kMA/JcY0L0PAyLW6rOT+A==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      typescript: '>=5.0.0'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   emoji-regex@9.2.2:
     resolution: {integrity: sha512-L18DaJsXSUk2+42pv8mLs5jJT2hqFkFE4j21wOmgbUqsZ2hL72NsUU785g9RXgo3s0ZNgVl42TiHp3ZtOv/Vyg==}
@@ -2924,6 +2936,10 @@ snapshots:
       safe-buffer: 5.2.1
 
   electron-to-chromium@1.5.334: {}
+
+  emailjs@5.0.2(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
 
   emoji-regex@9.2.2: {}
 
