@@ -1,4 +1,4 @@
-import { generateToken, getToken } from "@/util/authentication";
+import { generateToken, getToken, getUser } from "@/util/authentication";
 import { decode, JwtPayload, verify } from "jsonwebtoken";
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     let timeDisplay = new Date().toLocaleString("vi-VN");
     let registrationData: { dkmh_tu_dien_hoc_phan_ma: string; dkmh_nhom_hoc_phan_ma: string }[] = [];
     let scheduleData: any = null;
+    let authToken: string | undefined = undefined;
 
     try {
         let body: RegisterRequestBody;
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const authToken = scheduleData?.token;
+        authToken = scheduleData?.token;
         if (!authToken || !registrationData?.length) {
             return NextResponse.json(
                 { msg: "Thiếu thông tin đăng ký" },
@@ -57,6 +58,11 @@ export async function POST(request: Request) {
 
         const { dkmhToken, mssv: verifiedMssv } = await getValidDkmhToken(authToken);
         mssv = verifiedMssv;
+
+        let user: any = null;
+        try {
+            user = await getUser(authToken);
+        } catch {}
 
         const res = await fetch(
             "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/sinhvien/dangkyhocphan",
@@ -105,7 +111,7 @@ export async function POST(request: Request) {
                 ly_do: r.ly_do || errorMsg
             }));
             try {
-                await sendReportEmail(mssv, timeDisplay, failedResults, errorMsg);
+                await sendReportEmail(mssv, timeDisplay, failedResults, errorMsg, user?.sys_hoten);
             } catch (mailErr) {
                 console.error("Lỗi gửi mail báo thất bại:", mailErr);
             }
@@ -117,7 +123,7 @@ export async function POST(request: Request) {
         });
 
         try {
-            await sendReportEmail(mssv, timeDisplay, detailedResults);
+            await sendReportEmail(mssv, timeDisplay, detailedResults, undefined, user?.sys_hoten);
         } catch (mailErr) {
             console.error("Lỗi gửi mail báo thành công:", mailErr);
         }
@@ -127,6 +133,13 @@ export async function POST(request: Request) {
         const errorMsg = error.message || "Lỗi máy chủ không xác định";
 
         if (mssv && mssv !== "sinhvien" && registrationData.length > 0) {
+            let fullName: string | undefined;
+            if (authToken) {
+                try {
+                    const u = await getUser(authToken);
+                    fullName = u?.sys_hoten;
+                } catch {}
+            }
             const failedResults: CourseResult[] = registrationData.map((item) => ({
                 ma_hp: item.dkmh_tu_dien_hoc_phan_ma,
                 nhom_hp: item.dkmh_nhom_hoc_phan_ma,
@@ -134,7 +147,7 @@ export async function POST(request: Request) {
                 ly_do: errorMsg
             }));
             try {
-                await sendReportEmail(mssv, timeDisplay, failedResults, errorMsg);
+                await sendReportEmail(mssv, timeDisplay, failedResults, errorMsg, fullName);
             } catch (mailErr) {
                 console.error("Lỗi gửi mail báo lỗi hệ thống:", mailErr);
             }

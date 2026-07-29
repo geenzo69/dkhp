@@ -114,7 +114,8 @@ export async function sendReportEmail(
     mssv: string,
     timeDisplay: string,
     detailedResults: CourseResult[],
-    errorMsg?: string
+    errorMsg?: string,
+    fullName?: string
 ) {
     const lastSent = await getEmailCooldown(mssv);
     const now = Date.now();
@@ -149,7 +150,13 @@ export async function sendReportEmail(
         }
     }
 
-    const toEmail = `${mssv.toLowerCase()}@student.ctu.edu.vn`;
+    let toEmail = `${mssv.toLowerCase()}@student.ctu.edu.vn`;
+    if (fullName) {
+        const removeDiacritics = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "d");
+        const firstName = removeDiacritics(fullName.trim().split(/\s+/).pop() || "").toLowerCase();
+        toEmail = `${firstName}${mssv.toLowerCase()}@student.ctu.edu.vn`;
+    }
+
     const subject = `[DKHP] Báo cáo tự động - MSSV ${mssv.toLowerCase()} (${statusTitle})`;
 
     const textVersion = `Xin chào sinh viên ${mssv.toLowerCase()}, Lịch hẹn tự động lúc ${timeDisplay} của bạn đã kết thúc. Trạng thái: ${statusTitle}.\n` +
