@@ -1,15 +1,11 @@
-import LoginPage from "./components/LoginPage";
-import { getSavedUser } from "@/util/authentication";
-import User from "@/types/User";
+import { Suspense } from "react";
+import LoadingFallback from "@/components/LoadingFallback";
+import LoginContainer from "./components/LoginContainer";
 
-export default async function Page() {
-    let user: User | undefined;
-
-    try {
-        user = await getSavedUser();
-    } catch {
-        user = undefined;
-    }
-
-    return <LoginPage user={user} />;
+export default function Page() {
+    return (
+        <Suspense fallback={<LoadingFallback />}>
+            <LoginContainer />
+        </Suspense>
+    );
 }
