@@ -3,7 +3,6 @@
 import Course from "@/types/Course";
 import action from "@/util/safe-action";
 import { getDKMHToken, getUser } from "@/util/authentication";
-import { cookies } from "next/headers";
 
 const getCourses = action.action(async () => {
     const user = await getUser();

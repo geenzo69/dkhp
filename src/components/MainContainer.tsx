@@ -3,7 +3,7 @@ import { getUser } from "@/util/authentication";
 import Landing from "./Landing";
 import CourseList from "./CourseList";
 import ResultSummary from "./ResultSummary";
-import SystemLogs from "./SystemLogs";
+import RegistrationSchedule from "./RegistrationSchedule";
 import { Suspense } from "react";
 
 export default function MainContainer() {
@@ -31,7 +31,7 @@ async function MainContainerContent() {
                 <div className="xl:col-span-4 space-y-6">
                     <ResultSummary />
 
-                    <SystemLogs />
+                    <RegistrationSchedule user={user} />
                 </div>
             </div>
         )

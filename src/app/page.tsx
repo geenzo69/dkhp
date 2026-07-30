@@ -1,7 +1,7 @@
 import MainContainer from "@/components/MainContainer";
 import Header from "@/components/Header";
 
-export default async function Home() {
+export default function Home() {
     return (
         <div className="min-h-screen bg-[#f1f4f6] text-slate-700 font-sans flex flex-col">
             <Header />

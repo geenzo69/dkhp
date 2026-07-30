@@ -1,7 +1,7 @@
 import Schedule from "./components/Schedule";
 import Header from "@/components/Header";
 
-export default async function Page() {
+export default function Page() {
     return (
         <div className="min-h-screen bg-[#f1f4f6] text-slate-700 font-sans flex flex-col">
             <Header />
