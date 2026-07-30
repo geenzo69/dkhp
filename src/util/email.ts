@@ -17,16 +17,6 @@ export interface CourseResult {
     ly_do?: string;
 }
 
-const getEmailCooldown = unstable_cache(
-    async (mssv: string) => {
-        return Date.now();
-    },
-    ["email-cooldown"],
-    {
-        revalidate: 7200
-    }
-);
-
 function generateEmailHtml(
     mssv: string,
     timeDisplay: string,
@@ -110,21 +100,13 @@ function generateEmailHtml(
     `;
 }
 
-export async function sendReportEmail(
+export const sendReportEmail = unstable_cache(async function sendReportEmail(
     mssv: string,
-    timeDisplay: string,
     detailedResults: CourseResult[],
     errorMsg?: string,
     fullName?: string
 ) {
-    const lastSent = await getEmailCooldown(mssv);
-    const now = Date.now();
-
-    if (now - lastSent > 2000) {
-        console.log(`[Rate Limit] Email skipped for MSSV ${mssv} (Last sent: ${new Date(lastSent).toLocaleString("vi-VN")})`);
-        return;
-    }
-
+    const timeDisplay = new Date().toLocaleString("vi-VN");
     const allSuccess = detailedResults.every(r => r.trang_thai === "success");
     const anySuccess = detailedResults.some(r => r.trang_thai === "success");
 
@@ -185,4 +167,6 @@ export async function sendReportEmail(
             }
         );
     });
-}
+}, ["send-report-email"], {
+    revalidate: 7200
+});

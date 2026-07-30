@@ -20,7 +20,6 @@ interface RegisterRequestBody {
 
 export async function POST(request: Request) {
     let mssv = "sinhvien";
-    let timeDisplay = new Date().toLocaleString("vi-VN");
     let registrationData: { dkmh_tu_dien_hoc_phan_ma: string; dkmh_nhom_hoc_phan_ma: string }[] = [];
     let scheduleData: any = null;
     let authToken: string | undefined = undefined;
@@ -31,9 +30,6 @@ export async function POST(request: Request) {
             body = (await request.json()) as RegisterRequestBody;
             scheduleData = body.data;
             registrationData = scheduleData?.data || [];
-            if (scheduleData?.time) {
-                timeDisplay = new Date(scheduleData.time).toLocaleString("vi-VN");
-            }
         } catch (e) {
             return NextResponse.json(
                 { msg: "Định dạng JSON yêu cầu không hợp lệ" },
@@ -111,7 +107,7 @@ export async function POST(request: Request) {
                 ly_do: r.ly_do || errorMsg
             }));
             try {
-                await sendReportEmail(mssv, timeDisplay, failedResults, errorMsg, user?.sys_hoten);
+                await sendReportEmail(mssv, failedResults, errorMsg, user?.sys_hoten);
             } catch (mailErr) {
                 console.error("Lỗi gửi mail báo thất bại:", mailErr);
             }
@@ -123,7 +119,7 @@ export async function POST(request: Request) {
         });
 
         try {
-            await sendReportEmail(mssv, timeDisplay, detailedResults, undefined, user?.sys_hoten);
+            await sendReportEmail(mssv, detailedResults, undefined, user?.sys_hoten);
         } catch (mailErr) {
             console.error("Lỗi gửi mail báo thành công:", mailErr);
         }
@@ -147,7 +143,7 @@ export async function POST(request: Request) {
                 ly_do: errorMsg
             }));
             try {
-                await sendReportEmail(mssv, timeDisplay, failedResults, errorMsg, fullName);
+                await sendReportEmail(mssv, failedResults, errorMsg, fullName);
             } catch (mailErr) {
                 console.error("Lỗi gửi mail báo lỗi hệ thống:", mailErr);
             }
