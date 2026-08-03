@@ -1,3 +1,4 @@
+import User from "@/types/User";
 import { SMTPClient } from "emailjs";
 import { unstable_cache } from "next/cache";
 
@@ -101,10 +102,9 @@ function generateEmailHtml(
 }
 
 export const sendReportEmail = unstable_cache(async function sendReportEmail(
-    mssv: string,
+    user: User,
     detailedResults: CourseResult[],
     errorMsg?: string,
-    fullName?: string
 ) {
     const timeDisplay = new Date().toLocaleString("vi-VN");
     const allSuccess = detailedResults.every(r => r.trang_thai === "success");
@@ -132,19 +132,14 @@ export const sendReportEmail = unstable_cache(async function sendReportEmail(
         }
     }
 
-    let toEmail = `${mssv.toLowerCase()}@student.ctu.edu.vn`;
-    if (fullName) {
-        const removeDiacritics = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "d");
-        const firstName = removeDiacritics(fullName.trim().split(/\s+/).pop() || "").toLowerCase();
-        toEmail = `${firstName}${mssv.toLowerCase()}@student.ctu.edu.vn`;
-    }
+    let toEmail = user.sys_email;
 
-    const subject = `[DKHP] Báo cáo tự động - MSSV ${mssv.toLowerCase()} (${statusTitle})`;
+    const subject = `[DKHP] Báo cáo tự động`;
 
-    const textVersion = `Xin chào sinh viên ${mssv.toLowerCase()}, Lịch hẹn tự động lúc ${timeDisplay} của bạn đã kết thúc. Trạng thái: ${statusTitle}.\n` +
+    const textVersion = `Xin chào sinh viên ${user.sys_hoten}, Lịch hẹn tự động lúc ${timeDisplay} của bạn đã kết thúc. Trạng thái: ${statusTitle}.\n` +
         detailedResults.map(item => `- Môn ${item.ma_hp} (Nhóm ${item.nhom_hp}): ${item.trang_thai === "success" ? "Thành công" : "Thất bại: " + (item.ly_do || errorMsg || "Lỗi")}`).join("\n");
 
-    const htmlContent = generateEmailHtml(mssv, timeDisplay, detailedResults, statusTitle, bg, border, text, subtext, errorMsg);
+    const htmlContent = generateEmailHtml(user.sys_manguoidung, timeDisplay, detailedResults, statusTitle, bg, border, text, subtext, errorMsg);
 
     return new Promise<void>((resolve, reject) => {
         client.send(
@@ -159,7 +154,7 @@ export const sendReportEmail = unstable_cache(async function sendReportEmail(
             },
             (err, message) => {
                 if (err) {
-                    console.error("Gửi email thất bại cho MSSV:", mssv.toLowerCase(), "Chi tiết lỗi:", err);
+                    console.error("Gửi email thất bại cho MSSV:", user.sys_manguoidung, "Chi tiết lỗi:", err);
                     reject(err);
                 } else {
                     resolve();

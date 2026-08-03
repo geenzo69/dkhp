@@ -3,6 +3,8 @@ import { decode, JwtPayload, verify } from "jsonwebtoken";
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { sendReportEmail, CourseResult } from "@/util/email";
+import User from "@/types/User";
+import zlib from "zlib";
 
 const secret = process.env.DKHP_SECRET || "";
 
@@ -23,6 +25,7 @@ export async function POST(request: Request) {
     let registrationData: { dkmh_tu_dien_hoc_phan_ma: string; dkmh_nhom_hoc_phan_ma: string }[] = [];
     let scheduleData: any = null;
     let authToken: string | undefined = undefined;
+    let user: User | undefined;
 
     try {
         let body: RegisterRequestBody;
@@ -55,10 +58,20 @@ export async function POST(request: Request) {
         const { dkmhToken, mssv: verifiedMssv } = await getValidDkmhToken(authToken);
         mssv = verifiedMssv;
 
-        let user: any = null;
         try {
             user = await getUser(authToken);
         } catch {}
+
+        if (!user) {
+            user = getUserFromDkmhToken(dkmhToken);
+        }
+
+        if (!user) {
+            return NextResponse.json(
+                { msg: "Không thể lấy thông tin sinh viên" },
+                { status: 401 },
+            );
+        }
 
         const res = await fetch(
             "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/sinhvien/dangkyhocphan",
@@ -107,7 +120,7 @@ export async function POST(request: Request) {
                 ly_do: r.ly_do || errorMsg
             }));
             try {
-                await sendReportEmail(mssv, failedResults, errorMsg, user?.sys_hoten);
+                await sendReportEmail(user, failedResults, errorMsg);
             } catch (mailErr) {
                 console.error("Lỗi gửi mail báo thất bại:", mailErr);
             }
@@ -119,7 +132,7 @@ export async function POST(request: Request) {
         });
 
         try {
-            await sendReportEmail(mssv, detailedResults, undefined, user?.sys_hoten);
+            await sendReportEmail(user, detailedResults, undefined);
         } catch (mailErr) {
             console.error("Lỗi gửi mail báo thành công:", mailErr);
         }
@@ -129,11 +142,9 @@ export async function POST(request: Request) {
         const errorMsg = error.message || "Lỗi máy chủ không xác định";
 
         if (mssv && mssv !== "sinhvien" && registrationData.length > 0) {
-            let fullName: string | undefined;
-            if (authToken) {
+            if (!user && authToken) {
                 try {
-                    const u = await getUser(authToken);
-                    fullName = u?.sys_hoten;
+                    user = await getUser(authToken);
                 } catch {}
             }
             const failedResults: CourseResult[] = registrationData.map((item) => ({
@@ -142,10 +153,12 @@ export async function POST(request: Request) {
                 trang_thai: "fail",
                 ly_do: errorMsg
             }));
-            try {
-                await sendReportEmail(mssv, failedResults, errorMsg, fullName);
-            } catch (mailErr) {
-                console.error("Lỗi gửi mail báo lỗi hệ thống:", mailErr);
+            if (user) {
+                try {
+                    await sendReportEmail(user, failedResults, errorMsg);
+                } catch (mailErr) {
+                    console.error("Lỗi gửi mail báo lỗi hệ thống:", mailErr);
+                }
             }
         }
 
@@ -196,6 +209,19 @@ function isDkmhTokenValid(dkmhToken: string) {
     const decodedToken = decode(dkmhToken) as JwtPayload | null;
 
     return isJwtPayloadValid(decodedToken);
+}
+
+function getUserFromDkmhToken(dkmhToken: string) {
+    const decodedToken = decode(dkmhToken) as JwtPayload | null;
+
+    if (!decodedToken || typeof decodedToken.user_info !== "string") {
+        return;
+    }
+
+    const buffer = Buffer.from(decodedToken.user_info.trim(), "base64");
+    const decompressed = zlib.inflateSync(buffer);
+
+    return JSON.parse(decompressed.toString("utf-8")) as User;
 }
 
 function isJwtPayloadValid(payload: JwtPayload | null) {
