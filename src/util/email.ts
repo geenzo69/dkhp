@@ -19,7 +19,7 @@ export interface CourseResult {
 }
 
 function generateEmailHtml(
-    mssv: string,
+    user: User,
     timeDisplay: string,
     detailedResults: CourseResult[],
     statusTitle: string,
@@ -38,7 +38,7 @@ function generateEmailHtml(
     <p style="margin: 4px 0 0 0; opacity: 0.8; font-size: 12px;">Báo cáo kết quả đăng ký học phần tự động</p>
   </div>
   <div style="padding: 24px; background: #ffffff;">
-    <p style="font-size: 14px; color: #475569; margin: 0 0 16px 0;">Xin chào sinh viên <strong>${mssv.toLowerCase()}</strong>,</p>
+    <p style="font-size: 14px; color: #475569; margin: 0 0 16px 0;">Xin chào sinh viên <strong>${user.sys_hoten}</strong>,</p>
     
     <div style="padding: 16px; border-radius: 6px; margin-bottom: 24px; text-align: center; background: ${bg}; border: 1px solid ${border};">
       <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: ${text};">
@@ -139,7 +139,7 @@ export const sendReportEmail = unstable_cache(async function sendReportEmail(
     const textVersion = `Xin chào sinh viên ${user.sys_hoten}, Lịch hẹn tự động lúc ${timeDisplay} của bạn đã kết thúc. Trạng thái: ${statusTitle}.\n` +
         detailedResults.map(item => `- Môn ${item.ma_hp} (Nhóm ${item.nhom_hp}): ${item.trang_thai === "success" ? "Thành công" : "Thất bại: " + (item.ly_do || errorMsg || "Lỗi")}`).join("\n");
 
-    const htmlContent = generateEmailHtml(user.sys_manguoidung, timeDisplay, detailedResults, statusTitle, bg, border, text, subtext, errorMsg);
+    const htmlContent = generateEmailHtml(user, timeDisplay, detailedResults, statusTitle, bg, border, text, subtext, errorMsg);
 
     return new Promise<void>((resolve, reject) => {
         client.send(
