@@ -10,7 +10,7 @@ import getScheduleAction from "@/app/tu-dong-dang-ky/actions/getSchedule";
 import deleteScheduleAction from "@/app/actions/deleteSchedule";
 
 export default function ResultSummary() {
-    const { notify, addLog, setPlannedCourses, plannedCourses, courses, isLoadingCourses } = useApp();
+    const { notify, addLog, setPlannedCourses, plannedCourses, courses, isLoadingCourses, refetchCourses } = useApp();
     const [showScheduleUI, setShowScheduleUI] = useState(false);
     const [scheduleTime, setScheduleTime] = useState("");
     const [hasExistingSchedule, setHasExistingSchedule] = useState(false);
@@ -59,12 +59,14 @@ export default function ResultSummary() {
                 notify("Đã có lỗi xảy ra", "error");
             }
         },
-        onSuccess: ({ data }) => {
+        onSuccess: async ({ data }) => {
             if (!data) {
                 return;
             }
 
             notify("Đăng ký học phần thành công!", "success");
+            setPlannedCourses([]);
+            await refetchCourses();
         }
     });
 

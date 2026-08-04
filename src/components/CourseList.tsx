@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState } from "react";
 import { Search, Calendar } from "lucide-react";
 import Card from "./Card";
 import RegistrationModal from "./RegistrationModal";
@@ -27,16 +27,26 @@ export default function CourseList() {
         : [];
     const [selectedCourseForModal, setSelectedCourseForModal] =
         useState<Course | null>(null);
+    const selectedCourseCode =
+        selectedCourseForModal?.dkmh_tu_dien_hoc_phan_ma;
+    const latestSelectedCourseForModal = selectedCourseCode
+        ? courses.find(
+            (course) =>
+                course.dkmh_tu_dien_hoc_phan_ma === selectedCourseCode,
+        ) || selectedCourseForModal
+        : null;
     const skeletonRows = Array.from({ length: 5 });
 
     const handleConfirmRegistration = (group: LopHocPhan) => {
-        if (!selectedCourseForModal) return;
+        if (!latestSelectedCourseForModal) return;
+
+        const selectedCourse = latestSelectedCourseForModal;
     
         let conflictCourse: Course | undefined;
 
         const plannedConflict = plannedCourses.find(
             (r) =>
-                r.course.dkmh_tu_dien_hoc_phan_ma !== selectedCourseForModal.dkmh_tu_dien_hoc_phan_ma &&
+                r.course.dkmh_tu_dien_hoc_phan_ma !== selectedCourse.dkmh_tu_dien_hoc_phan_ma &&
                 checkTkbConflict(r.group.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb)
         );
         if (plannedConflict) {
@@ -45,7 +55,7 @@ export default function CourseList() {
             const registeredConflict = courses.find(
                 (c) =>
                     c.trang_thai_dang_ky === 1 &&
-                    c.dkmh_tu_dien_hoc_phan_ma !== selectedCourseForModal.dkmh_tu_dien_hoc_phan_ma &&
+                    c.dkmh_tu_dien_hoc_phan_ma !== selectedCourse.dkmh_tu_dien_hoc_phan_ma &&
                     checkTkbConflict(c.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb)
             );
             if (registeredConflict) {
@@ -55,7 +65,7 @@ export default function CourseList() {
 
         if (conflictCourse) {
             addLog(
-                `Trùng lịch: ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn} vs ${conflictCourse.dkmh_tu_dien_hoc_phan_ten_vn}`,
+                `Trùng lịch: ${selectedCourse.dkmh_tu_dien_hoc_phan_ten_vn} vs ${conflictCourse.dkmh_tu_dien_hoc_phan_ten_vn}`,
                 "error",
             );
             notify(
@@ -66,32 +76,32 @@ export default function CourseList() {
         }
     
         const existingIndex = plannedCourses.findIndex(
-            (r) => r.course.dkmh_tu_dien_hoc_phan_ma === selectedCourseForModal.dkmh_tu_dien_hoc_phan_ma
+            (r) => r.course.dkmh_tu_dien_hoc_phan_ma === selectedCourse.dkmh_tu_dien_hoc_phan_ma
         );
 
         let newPlannedCourses;
         const isEdit = existingIndex > -1;
         if (isEdit) {
             newPlannedCourses = [...plannedCourses];
-            newPlannedCourses[existingIndex] = { course: selectedCourseForModal, group };
+            newPlannedCourses[existingIndex] = { course: selectedCourse, group };
         } else {
             newPlannedCourses = [
                 ...plannedCourses,
-                { course: selectedCourseForModal, group },
+                { course: selectedCourse, group },
             ];
         }
 
         setPlannedCourses(newPlannedCourses);
         addLog(
             isEdit
-                ? `Đã đổi sang Nhóm ${group.dkmh_nhom_hoc_phan_ma}: ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn}`
-                : `Đã đăng ký: ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn} (Nhóm ${group.dkmh_nhom_hoc_phan_ma})`,
+                ? `Đã đổi sang Nhóm ${group.dkmh_nhom_hoc_phan_ma}: ${selectedCourse.dkmh_tu_dien_hoc_phan_ten_vn}`
+                : `Đã đăng ký: ${selectedCourse.dkmh_tu_dien_hoc_phan_ten_vn} (Nhóm ${group.dkmh_nhom_hoc_phan_ma})`,
             "info",
         );
         notify(
             isEdit
                 ? `Đã đổi sang nhóm ${group.dkmh_nhom_hoc_phan_ma} thành công!`
-                : `Đã chọn học phần ${selectedCourseForModal.dkmh_tu_dien_hoc_phan_ten_vn} thành công!`,
+                : `Đã chọn học phần ${selectedCourse.dkmh_tu_dien_hoc_phan_ten_vn} thành công!`,
             "success",
         );
         setSelectedCourseForModal(null);
@@ -176,9 +186,9 @@ export default function CourseList() {
                 </div>
             </Card>
 
-            {selectedCourseForModal && (
+            {latestSelectedCourseForModal && (
                 <RegistrationModal
-                    course={selectedCourseForModal}
+                    course={latestSelectedCourseForModal}
                     onClose={() => setSelectedCourseForModal(null)}
                     onConfirm={handleConfirmRegistration}
                 />

@@ -101,6 +101,52 @@ export function AppProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(`dkhp_planned_${semesterId}`, JSON.stringify(savedGroups));
     }, [plannedCourses, user, isLoaded]);
 
+    useEffect(() => {
+        if (courses.length === 0 || plannedCourses.length === 0) return;
+
+        setPlannedCourses((currentPlannedCourses) => {
+            let hasUpdatedCourseData = false;
+
+            const nextPlannedCourses = currentPlannedCourses.map((plannedCourse) => {
+                const latestCourse = courses.find(
+                    (course) =>
+                        course.dkmh_tu_dien_hoc_phan_ma ===
+                        plannedCourse.course.dkmh_tu_dien_hoc_phan_ma,
+                );
+
+                if (!latestCourse) {
+                    return plannedCourse;
+                }
+
+                const latestGroup = latestCourse.data_nhom_hp.find(
+                    (group) =>
+                        group.dkmh_nhom_hoc_phan_ma ===
+                        plannedCourse.group.dkmh_nhom_hoc_phan_ma ||
+                        group.key === plannedCourse.group.key,
+                );
+
+                if (!latestGroup) {
+                    return plannedCourse;
+                }
+
+                if (
+                    latestCourse !== plannedCourse.course ||
+                    latestGroup !== plannedCourse.group
+                ) {
+                    hasUpdatedCourseData = true;
+                    return {
+                        course: latestCourse,
+                        group: latestGroup,
+                    };
+                }
+
+                return plannedCourse;
+            });
+
+            return hasUpdatedCourseData ? nextPlannedCourses : currentPlannedCourses;
+        });
+    }, [courses, plannedCourses.length]);
+
     const addLog = useCallback((message: string, type: "info" | "success" | "warning" | "error" = "info") => {
         const newLog: Log = {
             id: Date.now(),

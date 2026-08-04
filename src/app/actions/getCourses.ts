@@ -16,10 +16,7 @@ const getCourses = action.action(async () => {
     const res = await fetch(
         "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/hocphandadangky",
         {
-            next: {
-                revalidate: 60,
-                tags: [`COURSES/${user.sys_manguoidung}`]
-            },
+            cache: "no-store",
             method: "POST",
             headers: {
                 Authorization: `Bearer ${dkmhToken}`,
