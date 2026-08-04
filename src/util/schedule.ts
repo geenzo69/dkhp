@@ -7,6 +7,8 @@ const client = new Client({
     baseUrl: "https://qstash-eu-central-1.upstash.io",
     token: process.env.QSTASH_TOKEN,
   });
+
+const scheduleTimeZone = "Asia/Ho_Chi_Minh";
   
 
 const getSchedules = unstable_cache(async () => {
@@ -51,7 +53,7 @@ export async function createSchedule(data: any) {
 
     await client.schedules.create({
         destination: "https://dkhp.geenzo.dev/api/register",
-        cron: `${Number(minute)} ${Number(hour)} ${Number(day)} ${Number(month)} *`,
+        cron: `CRON_TZ=${scheduleTimeZone} ${Number(minute)} ${Number(hour)} ${Number(day)} ${Number(month)} *`,
         method: "POST",
         body: JSON.stringify({
             dkmh_tu_dien_hoat_dong_dao_tao_ma: "CQ",

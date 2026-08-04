@@ -18,6 +18,20 @@ interface ScheduledEntry {
     dkmh_nhom_hoc_phan_ma: string;
 }
 
+function formatScheduleTime(time: string) {
+    const match = time.match(
+        /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/,
+    );
+
+    if (!match) {
+        return time;
+    }
+
+    const [, year, month, day, hour, minute, second] = match;
+
+    return `${day}/${month}/${year}, ${hour}:${minute}:${second || "00"}`;
+}
+
 export default function AutoRegister() {
     const { courses, isLoadingCourses, refetchCourses, notify, addLog } = useApp();
     const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -102,7 +116,7 @@ export default function AutoRegister() {
 
     const isLoading = isInitialLoading || isLoadingSchedule || isLoadingCourses;
     const displayTime = scheduleTime
-        ? new Date(scheduleTime).toLocaleString("vi-VN")
+        ? formatScheduleTime(scheduleTime)
         : "--:--";
     const totalCredits = scheduledCourses.reduce(
         (total, course) => total + (course.credits || 0),

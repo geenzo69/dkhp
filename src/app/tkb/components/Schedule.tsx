@@ -22,6 +22,7 @@ interface ParsedSlot {
     startPeriod: number;
     endPeriod: number;
     courseName: string;
+    groupCode: string | null;
     weeks: string;
     color: string;
     isRegistered: boolean;
@@ -170,6 +171,7 @@ export default function Schedule() {
                             startPeriod: block.start,
                             endPeriod: block.end,
                             courseName: course.dkmh_tu_dien_hoc_phan_ten_vn,
+                            groupCode: course.dkmh_nhom_hoc_phan_ma,
                             weeks: block.weeks,
                             color: "bg-slate-600",
                             isRegistered: true,
@@ -190,6 +192,7 @@ export default function Schedule() {
                         startPeriod: block.start,
                         endPeriod: block.end,
                         courseName: course.dkmh_tu_dien_hoc_phan_ten_vn,
+                        groupCode: group.dkmh_nhom_hoc_phan_ma,
                         weeks: block.weeks,
                         color,
                         isRegistered: false,
@@ -324,6 +327,14 @@ export default function Schedule() {
                                                             {block.courseName}
                                                         </div>
                                                         <div className="mt-2 space-y-1">
+                                                            {block.groupCode && (
+                                                                <div className="text-[8px] font-black bg-white/20 text-white w-fit px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                                                                    Nhóm{" "}
+                                                                    {
+                                                                        block.groupCode
+                                                                    }
+                                                                </div>
+                                                            )}
                                                             <div className="flex items-center gap-1.5 text-[8px] font-black bg-black/10 w-fit px-1.5 py-0.5 rounded backdrop-blur-sm">
                                                                 <Clock
                                                                     size={8}

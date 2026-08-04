@@ -11,6 +11,8 @@ const client = new SMTPClient({
     port: 587
 });
 
+const emailTimeZone = "Asia/Ho_Chi_Minh";
+
 export interface CourseResult {
     ma_hp: string;
     nhom_hp: string;
@@ -106,7 +108,9 @@ export const sendReportEmail = unstable_cache(async function sendReportEmail(
     detailedResults: CourseResult[],
     errorMsg?: string,
 ) {
-    const timeDisplay = new Date().toLocaleString("vi-VN");
+    const timeDisplay = new Date().toLocaleString("vi-VN", {
+        timeZone: emailTimeZone
+    });
     const allSuccess = detailedResults.every(r => r.trang_thai === "success");
     const anySuccess = detailedResults.some(r => r.trang_thai === "success");
 
