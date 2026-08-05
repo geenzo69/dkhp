@@ -2,12 +2,12 @@
 
 import {
     createContext,
-    useCallback,
     useContext,
     useEffect,
     useState,
 } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
+import { useAction } from "next-safe-action/hooks";
 import Toast, { Notification } from "@/components/Toast";
 import Course from "@/types/Course";
 import LopHocPhan from "@/types/LopHocPhan";
@@ -37,7 +37,7 @@ interface AppContextType {
     notify: (text: string, type?: "info" | "success" | "warning" | "error", duration?: number) => void;
     notification: Notification | null;
     isLoadingCourses: boolean;
-    refetchCourses: () => Promise<void>;
+    refetchCourses: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -52,16 +52,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [isLoadingCourses, setIsLoadingCourses] = useState(true);
-
-    useEffect(() => {
-        getCurrentUser().then((res) => {
-            if (res?.data) {
-                setUser(res.data);
-            } else {
-                setIsLoadingCourses(false);
-            }
-        });
-    }, []);
 
     useEffect(() => {
         if (!user || courses.length === 0 || isLoaded) return;
@@ -147,7 +137,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
     }, [courses, plannedCourses.length]);
 
-    const addLog = useCallback((message: string, type: "info" | "success" | "warning" | "error" = "info") => {
+    const addLog = (message: string, type: "info" | "success" | "warning" | "error" = "info") => {
         const newLog: Log = {
             id: Date.now(),
             time: new Date().toLocaleTimeString([], {
@@ -158,50 +148,63 @@ export function AppProvider({ children }: { children: ReactNode }) {
             type,
         };
         setLogs((prev) => [newLog, ...prev]);
-    }, []);
+    };
 
-    const clearLogs = useCallback(() => {
+    const clearLogs = () => {
         setLogs([]);
-    }, []);
+    };
 
-    const notify = useCallback((text: string, type: "info" | "success" | "warning" | "error" = "info", duration = 3000) => {
+    const notify = (text: string, type: "info" | "success" | "warning" | "error" = "info", duration = 3000) => {
         setNotification({ text, type });
         setTimeout(() => {
             setNotification((prev) => (prev?.text === text ? null : prev));
         }, duration);
-    }, []);
+    };
 
-    const refetchCourses = useCallback(async () => {
-        setIsLoadingCourses(true);
-        try {
-            const res = await getCourses();
-            if (res?.data) {
-                setCourses(res.data);
-            } else if (res?.serverError) {
-                notify(res.serverError, "error");
-            } else if (res?.validationErrors) {
-                const messages = Object.values(res.validationErrors)
-                    .flatMap((err: any) =>
-                        Array.isArray(err) ? err : err?._errors ?? []
-                    )
-                    .join(", ");
-                notify(messages || "Validation error!", "error");
+    const { execute: executeGetCurrentUser } = useAction(getCurrentUser, {
+        onError: ({ error }) => {
+            notify(getActionErrorMessage(error), "error");
+            setIsLoadingCourses(false);
+        },
+        onSuccess: ({ data }) => {
+            if (data) {
+                setUser(data);
+            } else {
+                setIsLoadingCourses(false);
+            }
+        },
+    });
+
+    const { execute: executeGetCourses } = useAction(getCourses, {
+        onError: ({ error }) => {
+            notify(getActionErrorMessage(error), "error");
+            setIsLoadingCourses(false);
+        },
+        onSuccess: ({ data }) => {
+            if (data) {
+                setCourses(data);
             } else {
                 notify("Không thể tải danh sách học phần", "error");
             }
-        } catch (e: any) {
-            console.error("Error fetching courses:", e);
-            notify(e.message || "Đã có lỗi xảy ra khi tải danh sách học phần", "error");
-        } finally {
+
             setIsLoadingCourses(false);
-        }
-    }, [notify]);
+        },
+    });
+
+    const refetchCourses = () => {
+        setIsLoadingCourses(true);
+        executeGetCourses();
+    };
+
+    useEffect(() => {
+        executeGetCurrentUser();
+    }, []);
 
     useEffect(() => {
         if (user) {
             refetchCourses();
         }
-    }, [user, refetchCourses]);
+    }, [user]);
 
     return (
         <AppContext.Provider
@@ -231,4 +234,22 @@ export function useApp() {
         throw new Error("useApp must be used within an AppProvider");
     }
     return context;
+}
+
+function getActionErrorMessage(error: any) {
+    if (error.serverError) {
+        return error.serverError;
+    }
+
+    if (error.validationErrors) {
+        const messages = Object.values(error.validationErrors)
+            .flatMap((err: any) =>
+                Array.isArray(err) ? err : err?._errors ?? []
+            )
+            .join(", ");
+
+        return messages || "Validation error!";
+    }
+
+    return "Đã có lỗi xảy ra";
 }

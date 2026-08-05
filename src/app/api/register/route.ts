@@ -1,4 +1,4 @@
-import { generateToken, getToken, getUser } from "@/util/authentication";
+import { getToken, getUser } from "@/util/authentication";
 import { decode, JwtPayload, verify } from "jsonwebtoken";
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
@@ -12,6 +12,7 @@ interface RegisterRequestBody {
     dkmh_tu_dien_hoat_dong_dao_tao_ma?: string;
     data?: {
         token?: string;
+        tokenMode?: "auth" | "dkhp";
         data?: {
             dkmh_tu_dien_hoc_phan_ma: string;
             dkmh_nhom_hoc_phan_ma: string;
@@ -21,10 +22,11 @@ interface RegisterRequestBody {
 }
 
 export async function POST(request: Request) {
-    let mssv = "sinhvien";
+    let mssv;
     let registrationData: { dkmh_tu_dien_hoc_phan_ma: string; dkmh_nhom_hoc_phan_ma: string }[] = [];
     let scheduleData: any = null;
     let authToken: string | undefined = undefined;
+    let dkmhToken: string | undefined = undefined;
     let user: User | undefined;
 
     try {
@@ -40,30 +42,50 @@ export async function POST(request: Request) {
             );
         }
 
-        authToken = scheduleData?.token;
-        if (!authToken || !registrationData?.length) {
+        const scheduleToken = scheduleData?.token;
+        const tokenMode = scheduleData?.tokenMode === "dkhp" ? "dkhp" : "auth";
+
+        if (!scheduleToken || !registrationData?.length) {
             return NextResponse.json(
                 { msg: "Thiếu thông tin đăng ký" },
                 { status: 400 },
             );
         }
 
-        try {
-            const payload = decode(authToken) as JwtPayload;
-            if (payload?.mssv) {
-                mssv = payload.mssv;
+        if (tokenMode === "dkhp") {
+            const scheduledDkmhToken = scheduleToken;
+            dkmhToken = scheduledDkmhToken;
+            if (!isDkmhTokenValid(scheduledDkmhToken)) {
+                throw new Error("dkhp_token đã hết hạn");
             }
-        } catch {}
 
-        const { dkmhToken, mssv: verifiedMssv } = await getValidDkmhToken(authToken);
-        mssv = verifiedMssv;
+            user = getUserFromDkmhToken(scheduledDkmhToken);
+            if (user) {
+                mssv = user.sys_manguoidung;
+            }
+        } else {
+            const scheduledAuthToken = scheduleToken;
+            authToken = scheduledAuthToken;
 
-        try {
-            user = await getUser(authToken);
-        } catch {}
+            try {
+                const payload = decode(scheduledAuthToken) as JwtPayload;
+                if (payload?.mssv) {
+                    mssv = payload.mssv;
+                }
+            } catch {}
 
-        if (!user) {
-            user = getUserFromDkmhToken(dkmhToken);
+            const tokenData = await getValidDkmhToken(scheduledAuthToken);
+            const refreshedDkmhToken = tokenData.dkmhToken;
+            dkmhToken = refreshedDkmhToken;
+            mssv = tokenData.mssv;
+
+            try {
+                user = await getUser(scheduledAuthToken, refreshedDkmhToken);
+            } catch {}
+
+            if (!user) {
+                user = getUserFromDkmhToken(refreshedDkmhToken);
+            }
         }
 
         if (!user) {
@@ -73,13 +95,22 @@ export async function POST(request: Request) {
             );
         }
 
+        if (!dkmhToken) {
+            return NextResponse.json(
+                { msg: "Thiếu token đăng ký học phần" },
+                { status: 400 },
+            );
+        }
+
+        const registrationDkmhToken = dkmhToken;
+
         const res = await fetch(
             "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/sinhvien/dangkyhocphan",
             {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${dkmhToken}`,
+                    Authorization: `Bearer ${registrationDkmhToken}`,
                 },
                 body: JSON.stringify({
                     dkmh_tu_dien_hoat_dong_dao_tao_ma:
@@ -177,8 +208,7 @@ async function getValidDkmhToken(authToken: string) {
 
     if (
         typeof payload.mssv !== "string" ||
-        typeof payload.password !== "string" ||
-        typeof payload.token !== "string"
+        typeof payload.password !== "string"
     ) {
         throw new Error("Token đăng ký không hợp lệ");
     }
@@ -186,29 +216,15 @@ async function getValidDkmhToken(authToken: string) {
     const mssv = payload.mssv;
     const password = Buffer.from(payload.password, "base64").toString("utf-8");
 
-    if (isJwtPayloadValid(payload) && isDkmhTokenValid(payload.token)) {
-        return {
-            dkmhToken: payload.token,
-            mssv,
-        };
-    }
-
     revalidateTag(`user/${mssv}/${password}`, {
         expire: 3600
     });
     const refreshedDkmhToken = await getToken(mssv, password);
-    generateToken(mssv, password, refreshedDkmhToken);
 
     return {
         dkmhToken: refreshedDkmhToken,
         mssv,
     };
-}
-
-function isDkmhTokenValid(dkmhToken: string) {
-    const decodedToken = decode(dkmhToken) as JwtPayload | null;
-
-    return isJwtPayloadValid(decodedToken);
 }
 
 function getUserFromDkmhToken(dkmhToken: string) {
@@ -224,10 +240,8 @@ function getUserFromDkmhToken(dkmhToken: string) {
     return JSON.parse(decompressed.toString("utf-8")) as User;
 }
 
-function isJwtPayloadValid(payload: JwtPayload | null) {
-    if (!payload?.exp) {
-        return false;
-    }
+function isDkmhTokenValid(dkmhToken: string) {
+    const decodedToken = decode(dkmhToken) as JwtPayload | null;
 
-    return Date.now() < payload.exp * 1000;
+    return !!decodedToken?.exp && Date.now() < decodedToken.exp * 1000;
 }

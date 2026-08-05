@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Trash2 } from "lucide-react";
+import { CalendarClock, Clock3, KeyRound, Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import { useApp } from "@/providers/AppContext";
 import { useAction } from "next-safe-action/hooks";
 import registerCourse from "@/app/actions/registerCourse";
@@ -8,11 +8,14 @@ import { useState, useEffect } from "react";
 import createSchedule from "@/app/actions/createSchedule";
 import getScheduleAction from "@/app/tu-dong-dang-ky/actions/getSchedule";
 import deleteScheduleAction from "@/app/actions/deleteSchedule";
+import getDkhpTokenStatusAction from "@/app/actions/getDkhpTokenStatus";
 
 export default function ResultSummary() {
     const { notify, addLog, setPlannedCourses, plannedCourses, courses, isLoadingCourses, refetchCourses } = useApp();
     const [showScheduleUI, setShowScheduleUI] = useState(false);
     const [scheduleTime, setScheduleTime] = useState("");
+    const [useDkhpToken, setUseDkhpToken] = useState(false);
+    const [dkhpTokenExpiresAt, setDkhpTokenExpiresAt] = useState<number>();
     const [hasExistingSchedule, setHasExistingSchedule] = useState(false);
 
     const { execute: checkSchedule } = useAction(getScheduleAction, {
@@ -36,13 +39,41 @@ export default function ResultSummary() {
         }
     });
 
+    const { execute: checkDkhpTokenStatus } = useAction(getDkhpTokenStatusAction, {
+        onSuccess: ({ data }) => {
+            setDkhpTokenExpiresAt(data?.expiresAt);
+        },
+        onError: () => {
+            setDkhpTokenExpiresAt(undefined);
+            setUseDkhpToken(false);
+        }
+    });
+
     useEffect(() => {
         checkSchedule();
     }, []);
+
+    useEffect(() => {
+        if (showScheduleUI) {
+            checkDkhpTokenStatus();
+        }
+    }, [showScheduleUI]);
     const selectedCoursesData = plannedCourses.map((r) => ({
         dkmh_tu_dien_hoc_phan_ma: r.course.dkmh_tu_dien_hoc_phan_ma,
         dkmh_nhom_hoc_phan_ma: r.group.dkmh_nhom_hoc_phan_ma,
     }));
+    const selectedScheduleTime = scheduleTime ? new Date(scheduleTime).getTime() : undefined;
+    const canUseDkhpToken = !!selectedScheduleTime &&
+        !!dkhpTokenExpiresAt &&
+        selectedScheduleTime <= dkhpTokenExpiresAt;
+    const scheduleDate = getScheduleDate(scheduleTime);
+    const scheduleClock = getScheduleClock(scheduleTime);
+
+    useEffect(() => {
+        if (!canUseDkhpToken) {
+            setUseDkhpToken(false);
+        }
+    }, [canUseDkhpToken]);
 
     const { execute: register, isExecuting: isRegister } = useAction(registerCourse, {
         onError: ({ error }) => {
@@ -268,6 +299,7 @@ export default function ResultSummary() {
                                 <button
                                     onClick={(() => {
                                         setShowScheduleUI(true);
+                                        setUseDkhpToken(false);
                                     })}
                                     className="bg-amber-500 hover:bg-amber-400 text-white font-bold py-4 rounded shadow-lg shadow-amber-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95"
                                 >
@@ -282,18 +314,86 @@ export default function ResultSummary() {
                                 isSchedule ? "animate-pulse opacity-80" : ""
                             }`}
                         >
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">
-                                Chọn thời gian đăng ký
-                            </p>
-                            <input
-                                type="datetime-local"
-                                value={scheduleTime}
-                                disabled={isSchedule}
-                                onChange={(e) =>
-                                    setScheduleTime(e.target.value)
-                                }
-                                className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-sm text-white focus:outline-hidden focus:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
-                            />
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">
+                                    Chọn thời gian đăng ký
+                                </p>
+                                <p className="mt-1 text-[11px] font-medium text-white/45">
+                                    Múi giờ Asia/Ho_Chi_Minh
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <label className="group flex items-center gap-3 rounded-lg border border-white/10 bg-white/10 px-3 py-2.5 transition-colors focus-within:border-white/40 focus-within:bg-white/15">
+                                    <CalendarClock size={16} className="shrink-0 text-white/60" />
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-[9px] font-black uppercase tracking-widest text-white/40">
+                                            Ngày
+                                        </span>
+                                        <input
+                                            type="date"
+                                            value={scheduleDate}
+                                            disabled={isSchedule}
+                                            onChange={(e) => {
+                                                setScheduleTime(buildScheduleTime(e.target.value, scheduleClock || "00:00"));
+                                            }}
+                                            className="mt-1 w-full bg-transparent text-sm font-bold text-white outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                                        />
+                                    </span>
+                                </label>
+
+                                <label className="group flex items-center gap-3 rounded-lg border border-white/10 bg-white/10 px-3 py-2.5 transition-colors focus-within:border-white/40 focus-within:bg-white/15">
+                                    <Clock3 size={16} className="shrink-0 text-white/60" />
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-[9px] font-black uppercase tracking-widest text-white/40">
+                                            Giờ
+                                        </span>
+                                        <input
+                                            type="time"
+                                            value={scheduleClock}
+                                            disabled={isSchedule}
+                                            onChange={(e) => {
+                                                setScheduleTime(buildScheduleTime(scheduleDate || getTodayDate(), e.target.value));
+                                            }}
+                                            className="mt-1 w-full bg-transparent text-sm font-bold text-white outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                                        />
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div className="rounded-lg border border-white/10 bg-white/10 p-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (canUseDkhpToken) {
+                                            setUseDkhpToken(!useDkhpToken);
+                                        }
+                                    }}
+                                    disabled={!canUseDkhpToken || isSchedule}
+                                    className={`flex w-full items-center gap-3 rounded border px-3 py-2 text-left transition-colors disabled:cursor-not-allowed ${
+                                        useDkhpToken
+                                            ? "border-emerald-300/60 bg-emerald-400/20"
+                                            : "border-white/10 bg-white/5 hover:bg-white/10 disabled:hover:bg-white/5"
+                                    }`}
+                                >
+                                    {useDkhpToken ? (
+                                        <ShieldCheck size={16} className="shrink-0 text-emerald-200" />
+                                    ) : (
+                                        <KeyRound size={16} className="shrink-0 text-white/50" />
+                                    )}
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-[10px] font-black uppercase tracking-widest text-white">
+                                            Dùng dkhp_token cho lịch này
+                                        </span>
+                                        <span className="mt-0.5 block text-[11px] font-medium text-white/50">
+                                            {canUseDkhpToken
+                                                ? `Có hiệu lực đến ${formatTokenExpiry(dkhpTokenExpiresAt)}`
+                                                : "Chỉ khả dụng khi thời gian hẹn còn trong hạn token"}
+                                        </span>
+                                    </span>
+                                </button>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-2">
                                 <button
                                     onClick={() => {
@@ -309,7 +409,8 @@ export default function ResultSummary() {
                                         addLog("Hệ thống: Đang lên lịch đăng ký tự động...", "info");
                                         schedule({
                                             data: selectedCoursesData,
-                                            time: scheduleTime
+                                            time: scheduleTime,
+                                            useDkhpToken: useDkhpToken
                                         })
                                     }}
                                     disabled={isSchedule || !scheduleTime}
@@ -334,6 +435,7 @@ export default function ResultSummary() {
                                         }
 
                                         setShowScheduleUI(false);
+                                        setUseDkhpToken(false);
                                     }}
                                     disabled={isSchedule}
                                     className="bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded text-[10px] uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-60"
@@ -362,4 +464,36 @@ function getActionErrorMessage(error: any) {
         return messages || "Validation error!";
     }
     return "Đã có lỗi xảy ra";
+}
+
+function getScheduleDate(scheduleTime: string) {
+    return scheduleTime.split("T")[0] || "";
+}
+
+function getScheduleClock(scheduleTime: string) {
+    return scheduleTime.split("T")[1]?.slice(0, 5) || "";
+}
+
+function buildScheduleTime(date: string, time: string) {
+    if (!date || !time) return "";
+
+    return `${date}T${time}`;
+}
+
+function getTodayDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+function formatTokenExpiry(expiresAt?: number) {
+    if (!expiresAt) return "--:--";
+
+    return new Date(expiresAt).toLocaleString("vi-VN", {
+        dateStyle: "short",
+        timeStyle: "short",
+    });
 }

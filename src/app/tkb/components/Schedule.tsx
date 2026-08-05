@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, Calendar, Clock, Info } from "lucide-react";
+import { AlertTriangle, Calendar, Clock, Info, Sparkles } from "lucide-react";
 import { useApp } from "@/providers/AppContext";
+import { getCourseColor } from "@/util/format";
+import ScheduleGeneratorModal from "@/components/ScheduleGeneratorModal";
 
 const DAYS = [
     { label: "Thứ 2", value: 2 },
@@ -26,6 +28,7 @@ interface ParsedSlot {
     weeks: string;
     color: string;
     isRegistered: boolean;
+    courseCode: string;
 }
 
 function parseBlocks(
@@ -144,6 +147,7 @@ function ScheduleSkeleton() {
 
 export default function Schedule() {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
+    const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
     const { plannedCourses, courses, isLoadingCourses } = useApp();
 
     const allBlocks = useMemo(() => {
@@ -175,6 +179,7 @@ export default function Schedule() {
                             weeks: block.weeks,
                             color: "bg-slate-600",
                             isRegistered: true,
+                            courseCode: course.dkmh_tu_dien_hoc_phan_ma,
                         });
                     },
                 );
@@ -196,6 +201,7 @@ export default function Schedule() {
                         weeks: block.weeks,
                         color,
                         isRegistered: false,
+                        courseCode: course.dkmh_tu_dien_hoc_phan_ma,
                     });
                 },
             );
@@ -233,7 +239,8 @@ export default function Schedule() {
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-300">
+        <>
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-300">
             <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Calendar size={18} className="text-[#3f6ad8]" />
@@ -241,6 +248,13 @@ export default function Schedule() {
                         Thời khóa biểu tổng hợp
                     </h3>
                 </div>
+                <button
+                    onClick={() => setIsGeneratorOpen(true)}
+                    className="flex items-center gap-1.5 rounded-lg bg-[#3f6ad8] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-sm shadow-blue-100 hover:bg-[#3458b6] transition-all active:scale-95 cursor-pointer"
+                >
+                    <Sparkles size={12} />
+                    Xếp lịch tự động
+                </button>
             </div>
 
             <div className="overflow-x-auto">
@@ -304,72 +318,80 @@ export default function Schedule() {
                                             }}
                                         >
                                             <div className="absolute inset-0 flex">
-                                                {starters.map((block) => (
-                                                    <div
-                                                        key={block.id}
-                                                        onMouseEnter={() =>
-                                                            setHoveredId(
-                                                                block.id,
-                                                            )
-                                                        }
-                                                        onMouseLeave={() =>
-                                                            setHoveredId(null)
-                                                        }
-                                                        className={`flex-1 ${block.color} text-white p-2.5 flex flex-col justify-start relative transition-all duration-200 cursor-pointer border-r border-white/5 last:border-r-0 ${
-                                                            hoveredId &&
-                                                            hoveredId !==
-                                                                block.id
-                                                                ? "opacity-30 scale-[0.98] blur-[1px]"
-                                                                : "opacity-100 scale-100 z-10 shadow-lg"
-                                                        }`}
-                                                    >
-                                                        <div className="text-[10px] font-black leading-tight uppercase mb-auto">
-                                                            {block.courseName}
-                                                        </div>
-                                                        <div className="mt-2 space-y-1">
-                                                            {block.groupCode && (
-                                                                <div className="text-[8px] font-black bg-white/20 text-white w-fit px-1.5 py-0.5 rounded uppercase tracking-tighter">
-                                                                    Nhóm{" "}
-                                                                    {
-                                                                        block.groupCode
-                                                                    }
-                                                                </div>
-                                                            )}
-                                                            <div className="flex items-center gap-1.5 text-[8px] font-black bg-black/10 w-fit px-1.5 py-0.5 rounded backdrop-blur-sm">
-                                                                <Clock
-                                                                    size={8}
-                                                                />
-                                                                {
-                                                                    block.startPeriod
-                                                                }
-                                                                -
-                                                                {
-                                                                    block.endPeriod
-                                                                }
-                                                            </div>
-                                                            <div className="flex items-center gap-1.5 text-[8px] font-black bg-black/10 w-fit px-1.5 py-0.5 rounded backdrop-blur-sm">
-                                                                <Calendar
-                                                                    size={8}
-                                                                />
-                                                                Tuần{" "}
-                                                                {block.weeks}
-                                                            </div>
-                                                            {block.isRegistered && (
-                                                                <div className="text-[7px] font-black bg-white/20 text-white w-fit px-1.5 py-0.5 rounded uppercase tracking-tighter">
-                                                                    Đã đăng ký
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        {starters.length >
-                                                            1 && (
-                                                            <div className="absolute top-1 right-1 opacity-50">
-                                                                <AlertTriangle
-                                                                    size={10}
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
+                                                {starters.map((block) => {
+                                                     const courseColors = getCourseColor(block.courseCode);
+                                                     return (
+                                                         <div
+                                                             key={block.id}
+                                                             onMouseEnter={() =>
+                                                                 setHoveredId(
+                                                                     block.id,
+                                                                 )
+                                                             }
+                                                             onMouseLeave={() =>
+                                                                 setHoveredId(null)
+                                                             }
+                                                             style={{
+                                                                 backgroundColor: courseColors.solidBg,
+                                                                 borderColor: courseColors.solidBorder,
+                                                                 color: courseColors.solidText,
+                                                             }}
+                                                             className={`flex-1 p-2.5 flex flex-col justify-start relative transition-all duration-200 cursor-pointer border-r border-white/5 last:border-r-0 ${
+                                                                 hoveredId &&
+                                                                 hoveredId !==
+                                                                     block.id
+                                                                     ? "opacity-30 scale-[0.98] blur-[1px]"
+                                                                     : "opacity-100 scale-100 z-10 shadow-lg"
+                                                             }`}
+                                                         >
+                                                             <div className="text-[10px] font-black leading-tight uppercase mb-auto">
+                                                                 {block.courseName}
+                                                             </div>
+                                                             <div className="mt-2 space-y-1">
+                                                                 {block.groupCode && (
+                                                                     <div className="text-[8px] font-black bg-white/20 text-white w-fit px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                                                                         Nhóm{" "}
+                                                                         {
+                                                                             block.groupCode
+                                                                         }
+                                                                     </div>
+                                                                 )}
+                                                                 <div className="flex items-center gap-1.5 text-[8px] font-black bg-black/10 w-fit px-1.5 py-0.5 rounded backdrop-blur-sm">
+                                                                     <Clock
+                                                                         size={8}
+                                                                     />
+                                                                     {
+                                                                         block.startPeriod
+                                                                     }
+                                                                     -
+                                                                     {
+                                                                         block.endPeriod
+                                                                     }
+                                                                 </div>
+                                                                 <div className="flex items-center gap-1.5 text-[8px] font-black bg-black/10 w-fit px-1.5 py-0.5 rounded backdrop-blur-sm">
+                                                                     <Calendar
+                                                                         size={8}
+                                                                     />
+                                                                     Tuần{" "}
+                                                                     {block.weeks}
+                                                                 </div>
+                                                                 {block.isRegistered && (
+                                                                     <div className="text-[7px] font-black bg-white/20 text-white w-fit px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                                                                         Đã đăng ký
+                                                                     </div>
+                                                                 )}
+                                                             </div>
+                                                             {starters.length >
+                                                                 1 && (
+                                                                 <div className="absolute top-1 right-1 opacity-50">
+                                                                     <AlertTriangle
+                                                                         size={10}
+                                                                     />
+                                                                 </div>
+                                                             )}
+                                                         </div>
+                                                     );
+                                                 })}
                                             </div>
                                         </td>
                                     );
@@ -382,15 +404,9 @@ export default function Schedule() {
 
             <div className="p-4 bg-slate-50 border-t flex flex-wrap gap-6 items-center">
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-slate-600 rounded"></div>
+                    <span className="w-2 h-2 rounded-full bg-[#3f6ad8]" />
                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-tight">
-                        Đã đăng ký
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-blue-600 rounded"></div>
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-tight">
-                        Đang chọn
+                        Mỗi học phần có màu sắc nhận diện riêng
                     </span>
                 </div>
                 <div className="flex items-center gap-2 ml-auto text-slate-400">
@@ -401,5 +417,12 @@ export default function Schedule() {
                 </div>
             </div>
         </div>
+
+        {isGeneratorOpen && (
+            <ScheduleGeneratorModal
+                onClose={() => setIsGeneratorOpen(false)}
+            />
+        )}
+        </>
     );
 }

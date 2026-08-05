@@ -115,3 +115,29 @@ export function checkTkbConflict(tkb1: string | null | undefined, tkb2: string |
     }
     return false;
 }
+
+export function getCourseColor(courseCode: string) {
+    let hash = 2166136261;
+    for (let i = 0; i < courseCode.length; i++) {
+        hash ^= courseCode.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    hash = hash >>> 0;
+
+    const hue = hash % 360;
+    const satVariance = (hash >>> 8) % 15;
+    const lightVariance = (hash >>> 16) % 10;
+
+    const baseSat = 60 + satVariance - 7;
+    const baseLight = 45 + lightVariance - 5;
+
+    return {
+        softBg: `hsl(${hue}, 85%, 96%)`,
+        softBorder: `hsl(${hue}, ${baseSat}%, 90%)`,
+        softText: `hsl(${hue}, 85%, 25%)`,
+        solidBg: `hsl(${hue}, ${baseSat}%, ${baseLight}%)`,
+        solidBorder: `hsl(${hue}, ${baseSat}%, ${baseLight - 5}%)`,
+        solidText: `#ffffff`,
+        accent: `hsl(${hue}, 70%, 50%)`,
+    };
+}

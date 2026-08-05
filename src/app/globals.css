@@ -8,8 +8,8 @@
 @theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
-    --font-sans: var(--font-geist-sans);
-    --font-mono: var(--font-geist-mono);
+    --font-sans: var(--font-be-vietnam-pro);
+    --font-mono: sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +22,7 @@
 body {
     background: var(--background);
     color: var(--foreground);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font-sans), sans-serif;
 }
 
 @keyframes logoScale {
@@ -39,3 +39,46 @@ body {
 .animate-logo-scale {
     animation: logoScale 1.2s ease-in-out infinite;
 }
+
+@keyframes modalScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+@keyframes modalScaleOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.animate-modal-in {
+    animation: modalScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-modal-out {
+    animation: modalScaleOut 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-fade-in {
+    animation: fadeIn 0.2s ease-out forwards;
+}
+.animate-fade-out {
+    animation: fadeOut 0.15s ease-in forwards;
+}
+

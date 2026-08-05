@@ -2,7 +2,7 @@
 
 import { X, Clock, Users, BookOpen, CheckCircle2, AlertTriangle } from "lucide-react";
 import { formatTkb, checkTkbConflict } from "@/util/format";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Course from "@/types/Course";
 import LopHocPhan from "@/types/LopHocPhan";
 import { useApp } from "@/providers/AppContext";
@@ -22,25 +22,51 @@ export default function RegistrationModal({
     const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(
         null,
     );
+    const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsOpen(true), 10);
+        return () => clearTimeout(timer);
+    }, []);
 
     const selectedGroup = course.data_nhom_hp.find(
         (g) => g.key === selectedGroupKey,
     );
 
+    const handleClose = () => {
+        setIsOpen(false);
+        setTimeout(onClose, 200);
+    };
+
+    const handleConfirm = () => {
+        if (selectedGroup) {
+            setIsOpen(false);
+            setTimeout(() => onConfirm(selectedGroup), 200);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
-                onClick={onClose}
+                className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-200 ${
+                    isOpen ? "opacity-100" : "opacity-0"
+                }`}
+                onClick={handleClose}
             ></div>
 
             {/* Modal Content */}
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden relative z-10 animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div 
+                className={`bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden relative z-10 flex flex-col max-h-[90vh] transition-all duration-200 ${
+                    isOpen 
+                        ? "opacity-100 scale-100 translate-y-0" 
+                        : "opacity-0 scale-95 translate-y-4 md:translate-y-0"
+                }`}
+            >
                 {/* Header */}
                 <div className="bg-[#3f6ad8] p-6 text-white relative">
                     <button
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="absolute right-4 top-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                     >
                         <X size={18} />
@@ -196,16 +222,14 @@ export default function RegistrationModal({
                 {/* Footer */}
                 <div className="p-6 border-t bg-slate-50 flex items-center justify-between">
                     <button
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="px-6 py-2.5 rounded text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors uppercase tracking-widest"
                     >
                         Hủy bỏ
                     </button>
                     <button
                         disabled={!selectedGroupKey}
-                        onClick={() =>
-                            selectedGroup && onConfirm(selectedGroup)
-                        }
+                        onClick={handleConfirm}
                         className={`px-8 py-2.5 rounded text-sm font-bold text-white shadow-lg transition-all uppercase tracking-widest active:scale-95 ${
                             selectedGroupKey
                                 ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200"

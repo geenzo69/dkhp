@@ -2,11 +2,12 @@
 
 import { useApp } from "@/providers/AppContext";
 import Course from "@/types/Course";
-import { formatTkb } from "@/util/format";
-import { ArrowDown, ArrowUp, Clock, Info, Search, X } from "lucide-react";
+import LopHocPhan from "@/types/LopHocPhan";
+import { formatTkb, getCourseColor } from "@/util/format";
+import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, Clock, Info, Search, Users, X } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
-function SiSoDisplay({ current, total }: { current: number; total: number }) {
+export function SiSoDisplay({ current, total }: { current: number; total: number }) {
     const [effect, setEffect] = useState<"up" | "down" | null>(null);
     const prevValue = useRef(current);
 
@@ -62,6 +63,25 @@ function SiSoDisplay({ current, total }: { current: number; total: number }) {
     );
 }
 
+export function getTeacherName(
+    course: Course,
+    registration: { group: LopHocPhan } | undefined
+) {
+    const groupData =
+        registration?.group ||
+        course.data_nhom_hp.find(
+            (group) =>
+                group.dkmh_nhom_hoc_phan_ma ===
+                course.dkmh_nhom_hoc_phan_ma,
+        );
+
+    return (
+        groupData?.data?.[0]?.gv?.[0]?.dkmh_tu_dien_giang_vien_ten_vn ||
+        course.dkmh_tu_dien_giang_vien_ten_vn ||
+        "Đang cập nhật"
+    );
+}
+
 export default function CourseItem({
     course,
     setSelectedCourseForModal
@@ -87,58 +107,91 @@ export default function CourseItem({
         displayGroup = `Nhóm ${course.dkmh_nhom_hoc_phan_ma || "?"}`;
     }
 
+    const courseColors = getCourseColor(course.dkmh_tu_dien_hoc_phan_ma);
+
     return (
-        <tr
-            className={`hover:bg-slate-50/80 transition-colors ${active ? "bg-blue-50/30" : ""}`}
-        >
-            <td className="px-6 py-5">
-                <div className="font-bold text-slate-700 text-sm leading-tight mb-1">
-                    {course.dkmh_tu_dien_hoc_phan_ten_vn}
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 border">
-                        {course.dkmh_tu_dien_hoc_phan_ma}
-                    </span>
-                    <span className="text-[10px] font-bold text-[#3f6ad8] uppercase tracking-tighter">
-                        {course.dkmh_tu_dien_hoc_phan_so_tin_chi} Tín chỉ
-                    </span>
+        <tr className="group">
+            <td 
+                className={`rounded-l-lg border-y border-l px-5 py-5 shadow-sm transition-all group-hover:shadow-md ${
+                    active
+                        ? "border-blue-100 bg-blue-50/70"
+                        : "border-slate-100 bg-white"
+                }`}
+            >
+                <div className="flex items-start gap-3">
+                    <div 
+                        style={{ 
+                            backgroundColor: active ? courseColors.solidBg : courseColors.softBg,
+                            color: active ? '#ffffff' : courseColors.solidBg
+                        }}
+                        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg`}
+                    >
+                        {isFromAPI ? <CheckCircle2 size={16} /> : <BookOpen size={16} />}
+                    </div>
+                    <div className="min-w-0">
+                        <div 
+                            style={{ color: courseColors.softText }}
+                            className="mb-1 text-sm font-black leading-snug"
+                        >
+                            {course.dkmh_tu_dien_hoc_phan_ten_vn}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span 
+                                style={{
+                                    color: courseColors.softText,
+                                    backgroundColor: courseColors.softBg,
+                                    borderColor: courseColors.softBorder,
+                                }}
+                                className="rounded border px-2 py-1 text-[10px] font-black shadow-sm"
+                            >
+                                {course.dkmh_tu_dien_hoc_phan_ma}
+                            </span>
+                            <span className="rounded bg-blue-100 px-2 py-1 text-[10px] font-black uppercase tracking-tight text-[#3f6ad8]">
+                                {course.dkmh_tu_dien_hoc_phan_so_tin_chi} Tín chỉ
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </td>
-            <td className="px-6 py-5">
+            <td 
+                className={`border-y px-5 py-5 shadow-sm transition-all group-hover:shadow-md ${
+                    active
+                        ? "border-blue-100 bg-blue-50/70"
+                        : "border-slate-100 bg-white"
+                }`}
+            >
                 {active ? (
                     <>
-                        <div className="text-[10px] font-bold text-slate-600 flex items-center gap-1.5 leading-tight">
-                            <Clock size={12} className="shrink-0" />
+                        <div className="flex items-start gap-2 text-[11px] font-bold leading-relaxed text-slate-600">
+                            <Clock size={13} className="mt-0.5 shrink-0 text-[#3f6ad8]" />
                             <span>{formatTkb(registration?.group.dkmh_tu_dien_lop_hoc_phan_tkb || course.dkmh_tu_dien_lop_hoc_phan_tkb)}</span>
                         </div>
-                        <div className="text-[10px] text-[#3f6ad8] mt-1.5 uppercase tracking-tighter font-black flex items-center gap-1">
-                            {displayGroup} •{" "}
-                            {(() => {
-                                const groupData =
-                                    registration?.group ||
-                                    course.data_nhom_hp.find(
-                                        (g) =>
-                                            g.dkmh_nhom_hoc_phan_ma ===
-                                            course.dkmh_nhom_hoc_phan_ma,
-                                    );
-                                return (
-                                    groupData
-                                        ?.data?.[0]
-                                        ?.gv?.[0]
-                                        ?.dkmh_tu_dien_giang_vien_ten_vn ||
-                                    course.dkmh_tu_dien_giang_vien_ten_vn ||
-                                    "Đang cập nhật"
-                                );
-                            })()}
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-tight">
+                            <span className="rounded bg-white px-2 py-1 text-[#3f6ad8] shadow-sm ring-1 ring-blue-100">
+                                {displayGroup}
+                            </span>
+                            <span className="rounded bg-slate-100 px-2 py-1 text-slate-500">
+                                {getTeacherName(course, registration)}
+                            </span>
                         </div>
                     </>
                 ) : (
-                    <div className="text-[10px] text-slate-300 font-bold uppercase tracking-widest italic flex items-center gap-1">
-                        <Search size={10} /> Chưa chọn nhóm
+                    <div className="inline-flex items-center gap-2 rounded bg-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        <Search size={12} /> Chưa chọn nhóm
                     </div>
                 )}
             </td>
-            <td className="px-6 py-5">
+            <td 
+                className={`border-y px-5 py-5 shadow-sm transition-all group-hover:shadow-md ${
+                    active
+                        ? "border-blue-100 bg-blue-50/70"
+                        : "border-slate-100 bg-white"
+                }`}
+            >
+                <div className="mb-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <Users size={12} />
+                    Sĩ số
+                </div>
                 {(() => {
                     const group =
                         registration?.group ||
@@ -163,7 +216,13 @@ export default function CourseItem({
                     );
                 })()}
             </td>
-            <td className="px-6 py-5">
+            <td 
+                className={`rounded-r-lg border-y border-r px-5 py-5 shadow-sm transition-all group-hover:shadow-md ${
+                    active
+                        ? "border-blue-100 bg-blue-50/70"
+                        : "border-slate-100 bg-white"
+                }`}
+            >
                 <div className="flex items-center justify-end gap-2">
                     {active && (
                         <button
@@ -175,7 +234,7 @@ export default function CourseItem({
 
                                 setSelectedCourseForModal(course);
                             }}
-                            className="text-[10px] font-black uppercase text-slate-400 hover:text-[#3f6ad8] transition-colors p-2 rounded-lg hover:bg-slate-100"
+                            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white hover:text-[#3f6ad8]"
                             title="Xem các nhóm khác / Đổi nhóm"
                         >
                             <Info size={16} />
@@ -197,7 +256,7 @@ export default function CourseItem({
                                     "warning",
                                 );
                             }}
-                            className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors border border-red-100"
+                            className="rounded-lg border border-red-100 bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100"
                             title="Bỏ chọn học phần này"
                         >
                             <X size={16} />
@@ -219,13 +278,13 @@ export default function CourseItem({
 
                                 setSelectedCourseForModal(course);
                             }}
-                            className="border-2 border-[#3f6ad8] text-[#3f6ad8] px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest hover:bg-[#3f6ad8] hover:text-white transition-all active:scale-95 shadow-sm"
+                            className="rounded-lg bg-[#3f6ad8] px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-sm shadow-blue-100 transition-all hover:bg-[#3458b6] active:scale-95"
                         >
                             Chọn nhóm
                         </button>
                     )}
                     {isFromAPI && (
-                        <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase tracking-widest border border-slate-200">
+                        <span className="rounded bg-emerald-100 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-emerald-700 ring-1 ring-emerald-200">
                             Đã đăng ký
                         </span>
                     )}

@@ -2,16 +2,20 @@
 
 import Course from "@/types/Course";
 import action from "@/util/safe-action";
-import { getDKMHToken, getUser } from "@/util/authentication";
+import { getUser, getValidDkhpToken } from "@/util/authentication";
 
 const getCourses = action.action(async () => {
-    const user = await getUser();
+    const dkmhToken = await getValidDkhpToken();
+
+    if (!dkmhToken) {
+        throw new Error("Bạn phải đăng nhập!");
+    }
+
+    const user = await getUser(undefined, dkmhToken);
 
     if (!user) {
         throw new Error("Bạn phải đăng nhập!");
     }
-
-    const dkmhToken = await getDKMHToken();
 
     const res = await fetch(
         "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/hocphandadangky",
@@ -24,15 +28,19 @@ const getCourses = action.action(async () => {
         },
     );
 
-    if (!res.ok) return null;
-
-    const json = await res.json();
-
-    if (json.msg != "OK") {
-        return null;
+    let data;
+    try {
+        data = await res.json();
+    } catch(err) {
+        console.error(err);
+        throw new Error("Lỗi khi xử lý dữ liệu từ máy chủ!");
     }
 
-    return json.data.data as Course[];
+    if (data.msg != "OK") {
+        throw new Error(data.msg);
+    }
+
+    return data.data.data as Course[];
 });
 
 export default getCourses;

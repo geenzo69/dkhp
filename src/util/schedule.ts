@@ -49,7 +49,12 @@ export async function createSchedule(data: any) {
 
     const [, , month, day, hour, minute] = match;
 
-    const { mssv } = decode(data.token) as JwtPayload;
+    const decodedToken = decode(data.token) as JwtPayload | null;
+    const label = data.label || decodedToken?.mssv;
+
+    if (!label) {
+        throw new Error("Không thể xác định sinh viên tạo lịch hẹn");
+    }
 
     await client.schedules.create({
         destination: "https://dkhp.geenzo.dev/api/register",
@@ -59,7 +64,7 @@ export async function createSchedule(data: any) {
             dkmh_tu_dien_hoat_dong_dao_tao_ma: "CQ",
             data
         }),
-        label: mssv,
+        label,
         headers: {
             "Content-Type": "application/json",
         }
