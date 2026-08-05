@@ -120,7 +120,7 @@ export default function CourseItemMobile({
                 )}
 
                 {/* Sĩ Số indicator */}
-                {group ? (
+                {active && (group ? (
                     <div className="mt-2 pt-1">
                         <div className="mb-1 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
                             <Users size={12} />
@@ -136,7 +136,7 @@ export default function CourseItemMobile({
                     <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
                         Không có nhóm khả dụng
                     </div>
-                )}
+                ))}
             </div>
 
             {/* Actions row */}

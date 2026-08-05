@@ -192,7 +192,7 @@ export default function CourseItem({
                     <Users size={12} />
                     Sĩ số
                 </div>
-                {(() => {
+                {active ? (() => {
                     const group =
                         registration?.group ||
                         course.data_nhom_hp.find(
@@ -214,7 +214,9 @@ export default function CourseItem({
                             key={`${group.key}-${current}`}
                         />
                     );
-                })()}
+                })() : (
+                    <span className="text-[10px] text-slate-400 font-bold">—</span>
+                )}
             </td>
             <td 
                 className={`rounded-r-lg border-y border-r px-5 py-5 shadow-sm transition-all group-hover:shadow-md ${
