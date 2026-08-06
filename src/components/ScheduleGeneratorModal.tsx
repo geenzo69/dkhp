@@ -78,7 +78,7 @@ function parseTkbBlocks(
 export default function ScheduleGeneratorModal({
     onClose,
 }: ScheduleGeneratorModalProps) {
-    const { notify, addLog, setPlannedCourses, courses } = useApp();
+    const { notify, addLog, setPlannedCourses, courses, plannedCourses } = useApp();
     const [isOpen, setIsOpen] = useState(false);
     
     // Selector modal overlay states
@@ -93,11 +93,14 @@ export default function ScheduleGeneratorModal({
     // List of courses in system
     const listCourses = useMemo(() => courses || [], [courses]);
 
-    // Track which courses are added (only registered courses selected by default)
+    // Track which courses are added (registered courses or planned courses selected by default)
     const [selectedCourses, setSelectedCourses] = useState<Record<string, boolean>>(() => {
         const initial: Record<string, boolean> = {};
         listCourses.forEach((c) => {
-            initial[c.dkmh_tu_dien_hoc_phan_ma] = c.trang_thai_dang_ky === 1;
+            const isPlanned = plannedCourses.some(
+                (p) => p.course.dkmh_tu_dien_hoc_phan_ma === c.dkmh_tu_dien_hoc_phan_ma
+            );
+            initial[c.dkmh_tu_dien_hoc_phan_ma] = c.trang_thai_dang_ky === 1 || isPlanned;
         });
         return initial;
     });
@@ -106,7 +109,12 @@ export default function ScheduleGeneratorModal({
     const [groupPreferences, setGroupPreferences] = useState<Record<string, string>>(() => {
         const initial: Record<string, string> = {};
         listCourses.forEach((c) => {
-            if (c.trang_thai_dang_ky === 1) {
+            const planned = plannedCourses.find(
+                (p) => p.course.dkmh_tu_dien_hoc_phan_ma === c.dkmh_tu_dien_hoc_phan_ma
+            );
+            if (planned) {
+                initial[c.dkmh_tu_dien_hoc_phan_ma] = planned.group.key;
+            } else if (c.trang_thai_dang_ky === 1) {
                 // Locked to database group
                 const regGroup = c.data_nhom_hp.find(
                     (g) => g.dkmh_nhom_hoc_phan_ma === c.dkmh_nhom_hoc_phan_ma
@@ -188,7 +196,10 @@ export default function ScheduleGeneratorModal({
         if (!schedule) return;
 
         const newPlanned = schedule
-            .filter((item) => item.course.trang_thai_dang_ky !== 1)
+            .filter((item) => {
+                if (item.course.trang_thai_dang_ky !== 1) return true;
+                return item.group.dkmh_nhom_hoc_phan_ma !== item.course.dkmh_nhom_hoc_phan_ma;
+            })
             .map((item) => ({
                 course: item.course,
                 group: item.group,
@@ -197,7 +208,19 @@ export default function ScheduleGeneratorModal({
         setIsOpen(false);
         setTimeout(() => {
             setPlannedCourses(newPlanned);
-            addLog(`Đã xếp lịch tự động thành công với ${newPlanned.length} môn học mới.`, "success");
+            const newCount = newPlanned.filter(item => item.course.trang_thai_dang_ky !== 1).length;
+            const swapCount = newPlanned.filter(item => item.course.trang_thai_dang_ky === 1).length;
+            let logMsg = "Đã xếp lịch tự động thành công";
+            if (newCount > 0 && swapCount > 0) {
+                logMsg += ` với ${newCount} môn học mới và ${swapCount} môn đổi nhóm.`;
+            } else if (newCount > 0) {
+                logMsg += ` với ${newCount} môn học mới.`;
+            } else if (swapCount > 0) {
+                logMsg += ` với ${swapCount} môn đổi nhóm.`;
+            } else {
+                logMsg += ".";
+            }
+            addLog(logMsg, "success");
             notify("Đã áp dụng thời khóa biểu được chọn!", "success");
             onClose();
         }, 200);
@@ -554,10 +577,10 @@ export default function ScheduleGeneratorModal({
                                                                 {c.dkmh_tu_dien_hoc_phan_so_tin_chi} Tín chỉ
                                                             </span>
                                                             {isReg && (
-                                                                <span className="text-[8px] bg-emerald-100 text-emerald-700 px-1.5 rounded font-black uppercase tracking-tight">
-                                                                    Đã đăng ký (Khóa)
-                                                                </span>
-                                                            )}
+                                                                 <span className="text-[8px] bg-emerald-100 text-emerald-700 px-1.5 rounded font-black uppercase tracking-tight">
+                                                                     Đã đăng ký
+                                                                 </span>
+                                                             )}
                                                         </div>
                                                     </div>
                                                 </label>
@@ -572,13 +595,12 @@ export default function ScheduleGeneratorModal({
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {/* Tự động (Auto) peer option */}
                                                         <button
-                                                            disabled={isReg}
                                                             onClick={() => setTempPreference(code, "auto")}
                                                             className={`rounded border text-[9px] font-black px-2.5 py-1 transition-all uppercase tracking-tighter cursor-pointer ${
                                                                 activePref === "auto"
                                                                     ? "bg-indigo-50 border-indigo-200 text-[#3f6ad8] font-black shadow-sm"
                                                                     : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-                                                            } ${isReg ? "cursor-not-allowed opacity-40" : ""}`}
+                                                            }`}
                                                         >
                                                             Tự động chọn
                                                         </button>
@@ -589,13 +611,12 @@ export default function ScheduleGeneratorModal({
                                                             return (
                                                                 <button
                                                                     key={g.key}
-                                                                    disabled={isReg}
                                                                     onClick={() => setTempPreference(code, g.key)}
                                                                     className={`rounded border text-[9px] font-black px-2.5 py-1 transition-all uppercase tracking-tighter cursor-pointer ${
                                                                         isGroupActive
                                                                             ? "bg-indigo-50 border-indigo-200 text-[#3f6ad8] font-black shadow-sm"
                                                                             : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-                                                                    } ${isReg ? "cursor-not-allowed opacity-90" : ""}`}
+                                                                    }`}
                                                                 >
                                                                     Nhóm {g.dkmh_nhom_hoc_phan_ma}
                                                                 </button>

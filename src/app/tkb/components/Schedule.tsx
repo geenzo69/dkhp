@@ -164,8 +164,10 @@ export default function Schedule() {
         ];
         let colorIdx = 0;
 
+        const plannedCourseIds = new Set(plannedCourses.map((p) => p.course.dkmh_tu_dien_hoc_phan_ma));
+
         courses
-            ?.filter((course) => course.trang_thai_dang_ky === 1)
+            ?.filter((course) => course.trang_thai_dang_ky === 1 && !plannedCourseIds.has(course.dkmh_tu_dien_hoc_phan_ma))
             .forEach((course) => {
                 parseBlocks(course.dkmh_tu_dien_lop_hoc_phan_tkb).forEach(
                     (block, index) => {

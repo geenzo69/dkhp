@@ -1,5 +1,7 @@
 "use server";
 
+"use server";
+
 import { getDkhpTokenStatus, getUser } from "@/util/authentication";
 import action from "@/util/safe-action";
 import { createSchedule, getSchedule } from "@/util/schedule";
@@ -9,7 +11,8 @@ import z from "zod";
 const createScheduleAction = action.inputSchema(z.object({
     data: z.array(z.object({
         dkmh_tu_dien_hoc_phan_ma: z.string(),
-        dkmh_nhom_hoc_phan_ma: z.string()
+        dkmh_nhom_hoc_phan_ma: z.string(),
+        isSwap: z.boolean().optional()
     })),
     time: z.string(),
     useDkhpToken: z.boolean().optional()

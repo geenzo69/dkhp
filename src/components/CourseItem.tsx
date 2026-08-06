@@ -229,11 +229,6 @@ export default function CourseItem({
                     {active && (
                         <button
                             onClick={() => {
-                                if (isFromAPI) {
-                                    notify("Học phần này đã được đăng ký trên hệ thống!", "warning");
-                                    return;
-                                }
-
                                 setSelectedCourseForModal(course);
                             }}
                             className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white hover:text-[#3f6ad8]"

@@ -144,10 +144,6 @@ export default function CourseItemMobile({
                 {active && (
                     <button
                         onClick={() => {
-                            if (isFromAPI) {
-                                notify("Học phần này đã được đăng ký trên hệ thống!", "warning");
-                                return;
-                            }
                             setSelectedCourseForModal(course);
                         }}
                         className="flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2.5 text-slate-500 transition-colors hover:bg-slate-50 hover:text-[#3f6ad8]"

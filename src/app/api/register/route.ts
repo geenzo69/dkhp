@@ -16,6 +16,7 @@ interface RegisterRequestBody {
         data?: {
             dkmh_tu_dien_hoc_phan_ma: string;
             dkmh_nhom_hoc_phan_ma: string;
+            isSwap?: boolean;
         }[];
         time?: string;
     };
@@ -104,58 +105,120 @@ export async function POST(request: Request) {
 
         const registrationDkmhToken = dkmhToken;
 
-        const res = await fetch(
-            "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/sinhvien/dangkyhocphan",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${registrationDkmhToken}`,
+        const registrations = registrationData.filter((item: any) => !item.isSwap);
+        const swaps = registrationData.filter((item: any) => item.isSwap);
+
+        const detailedResults: CourseResult[] = [];
+
+        // 1. Normal registrations
+        if (registrations.length > 0) {
+            const res = await fetch(
+                "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/sinhvien/dangkyhocphan",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${registrationDkmhToken}`,
+                    },
+                    body: JSON.stringify({
+                        dkmh_tu_dien_hoat_dong_dao_tao_ma:
+                            body.dkmh_tu_dien_hoat_dong_dao_tao_ma || "CQ",
+                        data: registrations.map((r) => ({
+                            dkmh_tu_dien_hoc_phan_ma: r.dkmh_tu_dien_hoc_phan_ma,
+                            dkmh_nhom_hoc_phan_ma: r.dkmh_nhom_hoc_phan_ma,
+                        })),
+                    }),
                 },
-                body: JSON.stringify({
-                    dkmh_tu_dien_hoat_dong_dao_tao_ma:
-                        body.dkmh_tu_dien_hoat_dong_dao_tao_ma || "CQ",
-                    data: registrationData,
-                }),
-            },
-        );
+            );
 
-        const json = await res.json();
+            if (!res.ok) {
+                throw new Error("Lỗi kết nối máy chủ khi đăng ký học phần");
+            }
 
-        const resultDataList = Array.isArray(json.data) ? json.data : [];
-        const resultMap = new Map<string, { trang_thai: string; ly_do?: string }>();
-        resultDataList.forEach((item: any) => {
-            if (item?.dkmh_tu_dien_hoc_phan_ma) {
-                resultMap.set(item.dkmh_tu_dien_hoc_phan_ma, {
-                    trang_thai: item.trang_thai,
-                    ly_do: item.ly_do
+            const json = await res.json();
+            if (json.msg !== "OK") {
+                throw new Error(json.msg || "Đăng ký học phần không thành công");
+            }
+
+            const resultDataList = Array.isArray(json.data) ? json.data : [];
+            const resultMap = new Map<string, { trang_thai: string; ly_do?: string }>();
+            resultDataList.forEach((item: any) => {
+                if (item?.dkmh_tu_dien_hoc_phan_ma) {
+                    resultMap.set(item.dkmh_tu_dien_hoc_phan_ma, {
+                        trang_thai: item.trang_thai,
+                        ly_do: item.ly_do
+                    });
+                }
+            });
+
+            registrations.forEach((item) => {
+                const resItem = resultMap.get(item.dkmh_tu_dien_hoc_phan_ma);
+                detailedResults.push({
+                    ma_hp: item.dkmh_tu_dien_hoc_phan_ma,
+                    nhom_hp: item.dkmh_nhom_hoc_phan_ma,
+                    trang_thai: resItem?.trang_thai || "fail",
+                    ly_do: resItem?.ly_do
+                });
+            });
+        }
+
+        // 2. Sequential group swaps
+        for (const swap of swaps) {
+            try {
+                const res = await fetch(
+                    "https://dkmhback.ctu.edu.vn/api/v1/dangkyhocphan/sinhvien/doinhomhocphan",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${registrationDkmhToken}`,
+                        },
+                        body: JSON.stringify({
+                            dkmh_tu_dien_hoc_phan_ma: swap.dkmh_tu_dien_hoc_phan_ma,
+                            dkmh_nhom_hoc_phan_ma: swap.dkmh_nhom_hoc_phan_ma,
+                        }),
+                    },
+                );
+
+                if (res.status === 200) {
+                    detailedResults.push({
+                        ma_hp: swap.dkmh_tu_dien_hoc_phan_ma,
+                        nhom_hp: swap.dkmh_nhom_hoc_phan_ma,
+                        trang_thai: "success"
+                    });
+                } else {
+                    let errorMsg = "Đã có lỗi xảy ra hoặc lỗi kết nối đến máy chủ";
+                    try {
+                        const json = await res.json();
+                        errorMsg = json.msg || errorMsg;
+                    } catch {}
+                    detailedResults.push({
+                        ma_hp: swap.dkmh_tu_dien_hoc_phan_ma,
+                        nhom_hp: swap.dkmh_nhom_hoc_phan_ma,
+                        trang_thai: "fail",
+                        ly_do: errorMsg
+                    });
+                }
+            } catch (err: any) {
+                detailedResults.push({
+                    ma_hp: swap.dkmh_tu_dien_hoc_phan_ma,
+                    nhom_hp: swap.dkmh_nhom_hoc_phan_ma,
+                    trang_thai: "fail",
+                    ly_do: err?.message || "Lỗi đổi nhóm không xác định"
                 });
             }
-        });
+        }
 
-        const detailedResults: CourseResult[] = registrationData.map((item) => {
-            const resItem = resultMap.get(item.dkmh_tu_dien_hoc_phan_ma);
-            return {
-                ma_hp: item.dkmh_tu_dien_hoc_phan_ma,
-                nhom_hp: item.dkmh_nhom_hoc_phan_ma,
-                trang_thai: resItem?.trang_thai || "fail",
-                ly_do: resItem?.ly_do
-            };
-        });
-
-        if (!res.ok || json.msg !== "OK") {
-            const errorMsg = json.msg || "Lỗi đăng ký học phần";
-            const failedResults = detailedResults.map(r => ({
-                ...r,
-                trang_thai: r.trang_thai === "success" ? "success" : "fail",
-                ly_do: r.ly_do || errorMsg
-            }));
+        const anyFailed = detailedResults.some((r) => r.trang_thai !== "success");
+        if (anyFailed) {
+            const firstFailed = detailedResults.find((r) => r.trang_thai !== "success");
+            const errorMsg = firstFailed?.ly_do || "Lỗi đăng ký / đổi nhóm học phần";
             try {
-                await sendReportEmail(user, failedResults, errorMsg);
+                await sendReportEmail(user, detailedResults, errorMsg);
             } catch (mailErr) {
                 console.error("Lỗi gửi mail báo thất bại:", mailErr);
             }
-            return NextResponse.json(json, { status: 500 });
+            return NextResponse.json({ msg: errorMsg }, { status: 500 });
         }
 
         revalidateTag(`COURSES/${mssv}`, {
@@ -168,7 +231,7 @@ export async function POST(request: Request) {
             console.error("Lỗi gửi mail báo thành công:", mailErr);
         }
 
-        return NextResponse.json(json);
+        return NextResponse.json({ msg: "OK", data: detailedResults });
     } catch (error: any) {
         const errorMsg = error.message || "Lỗi máy chủ không xác định";
 

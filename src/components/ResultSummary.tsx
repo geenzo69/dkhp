@@ -61,7 +61,13 @@ export default function ResultSummary() {
     const selectedCoursesData = plannedCourses.map((r) => ({
         dkmh_tu_dien_hoc_phan_ma: r.course.dkmh_tu_dien_hoc_phan_ma,
         dkmh_nhom_hoc_phan_ma: r.group.dkmh_nhom_hoc_phan_ma,
+        isSwap: r.course.trang_thai_dang_ky === 1,
     }));
+    const registeredCourses = courses.filter((c) => c.trang_thai_dang_ky === 1);
+    const plannedCourseIds = new Set(plannedCourses.map((p) => p.course.dkmh_tu_dien_hoc_phan_ma));
+    const registeredOnlyCourses = registeredCourses.filter(
+        (c) => !plannedCourseIds.has(c.dkmh_tu_dien_hoc_phan_ma)
+    );
     const selectedScheduleTime = scheduleTime ? new Date(scheduleTime).getTime() : undefined;
     const canUseDkhpToken = !!selectedScheduleTime &&
         !!dkhpTokenExpiresAt &&
@@ -138,7 +144,7 @@ export default function ResultSummary() {
                         {isLoadingCourses ? (
                             <span className="inline-block h-8 w-12 bg-white/20 rounded animate-pulse" />
                         ) : (
-                            courses.filter((c) => c.trang_thai_dang_ky === 1).length + plannedCourses.length
+                            registeredOnlyCourses.length + plannedCourses.length
                         )}
                     </p>
                     <p className="text-[10px] font-bold uppercase opacity-60">
@@ -150,8 +156,8 @@ export default function ResultSummary() {
                         {isLoadingCourses ? (
                             <span className="inline-block h-8 w-12 bg-white/20 rounded animate-pulse" />
                         ) : (
-                            courses.filter((c) => c.trang_thai_dang_ky === 1).reduce((sum, c) => sum + c.dkmh_tu_dien_hoc_phan_so_tin_chi, 0) +
-                            plannedCourses.reduce((sum, p) => sum + p.course.dkmh_tu_dien_hoc_phan_so_tin_chi, 0)
+                             registeredOnlyCourses.reduce((sum, c) => sum + c.dkmh_tu_dien_hoc_phan_so_tin_chi, 0) +
+                             plannedCourses.reduce((sum, p) => sum + p.course.dkmh_tu_dien_hoc_phan_so_tin_chi, 0)
                         )}
                     </p>
                     <p className="text-[10px] font-bold uppercase opacity-60">
@@ -172,9 +178,7 @@ export default function ResultSummary() {
                     </div>
                 ) : (
                     <>
-                        {courses
-                            ?.filter((c) => c.trang_thai_dang_ky === 1)
-                            .map((course) => (
+                        {registeredOnlyCourses.map((course) => (
                                 <div
                                     key={`api-${course.dkmh_tu_dien_hoc_phan_ma}`}
                                     className="flex flex-col gap-1 bg-emerald-500/20 py-2 px-3 rounded text-[11px] border border-emerald-500/30"
@@ -204,15 +208,24 @@ export default function ResultSummary() {
                                 </div>
                             ))}
 
-                        {plannedCourses.map(({ course, group }) => (
-                            <div
-                                key={course.dkmh_tu_dien_hoc_phan_ma}
-                                className="flex flex-col gap-1 bg-white/5 py-2 px-3 rounded text-[11px]"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <span className="truncate font-bold text-white/90">
-                                        {course.dkmh_tu_dien_hoc_phan_ten_vn}
-                                    </span>
+                        {plannedCourses.map(({ course, group }) => {
+                            const isChangeGroup = course.trang_thai_dang_ky === 1;
+                            return (
+                                <div
+                                    key={course.dkmh_tu_dien_hoc_phan_ma}
+                                    className="flex flex-col gap-1 bg-white/5 py-2 px-3 rounded text-[11px]"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <span className="truncate font-bold text-white/90">
+                                                {course.dkmh_tu_dien_hoc_phan_ten_vn}
+                                            </span>
+                                            {isChangeGroup && (
+                                                <span className="shrink-0 text-[8px] bg-amber-500 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">
+                                                    Đổi nhóm
+                                                </span>
+                                            )}
+                                        </div>
                                     <button
                                         onClick={() => {
                                             const removed = plannedCourses.find(
@@ -246,7 +259,8 @@ export default function ResultSummary() {
                                     </span>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </>
                 )}
             </div>

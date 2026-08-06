@@ -19,9 +19,21 @@ export default function RegistrationModal({
     onConfirm,
 }: RegistrationModalProps) {
     const { plannedCourses, courses } = useApp();
-    const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(
-        null,
-    );
+    const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(() => {
+        const planned = plannedCourses.find(
+            (r) => r.course.dkmh_tu_dien_hoc_phan_ma === course.dkmh_tu_dien_hoc_phan_ma
+        );
+        if (planned) return planned.group.key;
+
+        if (course.trang_thai_dang_ky === 1) {
+            const apiGroup = course.data_nhom_hp.find(
+                (g) => g.dkmh_nhom_hoc_phan_ma === course.dkmh_nhom_hoc_phan_ma
+            );
+            if (apiGroup) return apiGroup.key;
+        }
+
+        return null;
+    });
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
@@ -121,17 +133,21 @@ export default function RegistrationModal({
                                 );
                             }
 
+                            const isOriginal = course.trang_thai_dang_ky === 1 &&
+                                group.dkmh_nhom_hoc_phan_ma === course.dkmh_nhom_hoc_phan_ma;
+                            const isDisable = !isOriginal && hasConflict;
+
                             return (
                                 <button
                                     key={group.key}
-                                    disabled={isFull || hasConflict}
+                                    disabled={isDisable}
                                     onClick={() =>
                                         setSelectedGroupKey(group.key)
                                     }
                                     className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center justify-between group ${
                                         isSelected
                                             ? "border-[#3f6ad8] bg-blue-50/50 shadow-md"
-                                            : (isFull || hasConflict)
+                                            : isDisable
                                               ? "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
                                               : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
                                     }`}
