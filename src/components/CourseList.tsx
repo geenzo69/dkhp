@@ -10,7 +10,7 @@ import CourseItem from "./CourseItem";
 import CourseItemMobile from "./CourseItemMobile";
 import Course from "@/types/Course";
 import LopHocPhan from "@/types/LopHocPhan";
-import { checkTkbConflict } from "@/util/format";
+import { checkTkbConflict, checkGroupConflict } from "@/util/format";
 
 export default function CourseList() {
     const { notify, addLog, setPlannedCourses, plannedCourses, courses, isLoadingCourses } = useApp();
@@ -51,17 +51,23 @@ export default function CourseList() {
         const plannedConflict = plannedCourses.find(
             (r) =>
                 r.course.dkmh_tu_dien_hoc_phan_ma !== selectedCourse.dkmh_tu_dien_hoc_phan_ma &&
-                checkTkbConflict(r.group.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb)
+                checkGroupConflict(r.group, group)
         );
         if (plannedConflict) {
             conflictCourse = plannedConflict.course;
         } else {
-            const registeredConflict = courses.find(
-                (c) =>
-                    c.trang_thai_dang_ky === 1 &&
-                    c.dkmh_tu_dien_hoc_phan_ma !== selectedCourse.dkmh_tu_dien_hoc_phan_ma &&
-                    checkTkbConflict(c.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb)
-            );
+            const registeredConflict = courses.find((c) => {
+                if (c.trang_thai_dang_ky !== 1 || c.dkmh_tu_dien_hoc_phan_ma === selectedCourse.dkmh_tu_dien_hoc_phan_ma) {
+                    return false;
+                }
+                const registeredGroup = c.data_nhom_hp?.find(
+                    (g) => g.dkmh_nhom_hoc_phan_ma === c.dkmh_nhom_hoc_phan_ma
+                );
+                if (registeredGroup) {
+                    return checkGroupConflict(registeredGroup, group);
+                }
+                return checkTkbConflict(c.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb);
+            });
             if (registeredConflict) {
                 conflictCourse = registeredConflict;
             }

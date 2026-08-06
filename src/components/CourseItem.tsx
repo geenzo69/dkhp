@@ -82,6 +82,29 @@ export function getTeacherName(
     );
 }
 
+export function getClassroomName(
+    course: Course,
+    registration: { group: LopHocPhan } | undefined
+) {
+    const groupData =
+        registration?.group ||
+        course.data_nhom_hp.find(
+            (group) =>
+                group.dkmh_nhom_hoc_phan_ma ===
+                course.dkmh_nhom_hoc_phan_ma,
+        );
+
+    if (!groupData?.data) return "Đang cập nhật";
+    const rooms = Array.from(
+        new Set(
+            groupData.data
+                .map((d) => d.dkmh_tu_dien_phong_hoc_ten?.trim())
+                .filter(Boolean)
+        )
+    );
+    return rooms.length > 0 ? rooms.join(", ") : "Đang cập nhật";
+}
+
 export default function CourseItem({
     course,
     setSelectedCourseForModal
@@ -169,6 +192,9 @@ export default function CourseItem({
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-tight">
                             <span className="rounded bg-white px-2 py-1 text-[#3f6ad8] shadow-sm ring-1 ring-blue-100">
                                 {displayGroup}
+                            </span>
+                            <span className="rounded bg-white px-2 py-1 text-[#3f6ad8] shadow-sm ring-1 ring-blue-100">
+                                Phòng: {getClassroomName(course, registration)}
                             </span>
                             <span className="rounded bg-slate-100 px-2 py-1 text-slate-500">
                                 {getTeacherName(course, registration)}

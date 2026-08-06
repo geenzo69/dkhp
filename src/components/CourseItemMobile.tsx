@@ -6,7 +6,7 @@ import LopHocPhan from "@/types/LopHocPhan";
 import { formatTkb, getCourseColor } from "@/util/format";
 import { BookOpen, CheckCircle2, Clock, Info, Search, Users, X } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
-import { SiSoDisplay, getTeacherName } from "./CourseItem";
+import { SiSoDisplay, getTeacherName, getClassroomName } from "./CourseItem";
 
 export default function CourseItemMobile({
     course,
@@ -107,6 +107,9 @@ export default function CourseItemMobile({
                         <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-tight">
                             <span className="rounded bg-white px-2 py-1 text-[#3f6ad8] shadow-sm ring-1 ring-blue-100">
                                 {displayGroup}
+                            </span>
+                            <span className="rounded bg-white px-2 py-1 text-[#3f6ad8] shadow-sm ring-1 ring-blue-100">
+                                Phòng: {getClassroomName(course, registration)}
                             </span>
                             <span className="rounded bg-slate-100 px-2 py-1 text-slate-500">
                                 {getTeacherName(course, registration)}

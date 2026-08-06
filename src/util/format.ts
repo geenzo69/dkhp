@@ -1,3 +1,5 @@
+import LopHocPhan from "@/types/LopHocPhan";
+
 /**
  * PARSER RULE:
  * tkb: Weeks_Indices (e.g., 1-12_1;2;3;4;19;20;21;22)
@@ -140,4 +142,66 @@ export function getCourseColor(courseCode: string) {
         solidText: `#ffffff`,
         accent: `hsl(${hue}, 70%, 50%)`,
     };
+}
+
+export function parsePeriodsFromString(tietHoc: string | null | undefined): number[] {
+    if (!tietHoc) return [];
+    
+    // If it contains a comma, parse as comma-separated list of numbers
+    if (tietHoc.includes(",")) {
+        return tietHoc.split(",").map(Number).filter(n => !isNaN(n));
+    }
+    
+    // Otherwise, parse it as a 13-character positional string (e.g. "123----------" or "-----6789----")
+    const periods: number[] = [];
+    for (let i = 0; i < tietHoc.length; i++) {
+        if (tietHoc[i] !== "-") {
+            periods.push(i + 1);
+        }
+    }
+    return periods;
+}
+
+export function checkGroupConflict(group1: LopHocPhan | null | undefined, group2: LopHocPhan | null | undefined): boolean {
+    if (!group1 || !group2) return false;
+    
+    // Fallback to string-based check if data arrays are not present
+    if (!group1.data || !group2.data) {
+        return checkTkbConflict(group1.dkmh_tu_dien_lop_hoc_phan_tkb, group2.dkmh_tu_dien_lop_hoc_phan_tkb);
+    }
+
+    for (const slot1 of group1.data) {
+        for (const slot2 of group2.data) {
+            // 1. Check if same day of week (coerced to number)
+            if (Number(slot1.dkmh_thu_trong_tuan_ma) !== Number(slot2.dkmh_thu_trong_tuan_ma)) {
+                continue;
+            }
+
+            // 2. Check if overlapping periods
+            const periods1 = parsePeriodsFromString(slot1.tiet_hoc);
+            const periods2 = parsePeriodsFromString(slot2.tiet_hoc);
+            const hasPeriodOverlap = periods1.some(p => periods2.includes(p));
+            if (!hasPeriodOverlap) {
+                continue;
+            }
+
+            // 3. Check if overlapping weeks (coerced elements to number)
+            const rawWeeks1 = (slot1.tuan_hoc && slot1.tuan_hoc.length > 0) ? slot1.tuan_hoc : (group1.tuan_hoc || []);
+            const rawWeeks2 = (slot2.tuan_hoc && slot2.tuan_hoc.length > 0) ? slot2.tuan_hoc : (group2.tuan_hoc || []);
+            
+            const weeks1 = rawWeeks1.map(Number);
+            const weeks2 = rawWeeks2.map(Number);
+            
+            if (weeks1.length === 0 || weeks2.length === 0) {
+                // If week info is missing, assume they overlap/conflict in weeks by default
+                return true;
+            }
+
+            const hasWeekOverlap = weeks1.some(w => weeks2.includes(w));
+            if (hasWeekOverlap) {
+                return true;
+            }
+        }
+    }
+    return false;
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { X, Clock, Users, BookOpen, CheckCircle2, AlertTriangle } from "lucide-react";
-import { formatTkb, checkTkbConflict } from "@/util/format";
+import { X, Clock, Users, BookOpen, CheckCircle2, AlertTriangle, MapPin } from "lucide-react";
+import { formatTkb, checkTkbConflict, checkGroupConflict, parsePeriodsFromString } from "@/util/format";
 import { useState, useEffect } from "react";
 import Course from "@/types/Course";
 import LopHocPhan from "@/types/LopHocPhan";
@@ -121,16 +121,22 @@ export default function RegistrationModal({
                             let hasConflict = plannedCourses.some(
                                 (r) =>
                                     r.course.dkmh_tu_dien_hoc_phan_ma !== course.dkmh_tu_dien_hoc_phan_ma &&
-                                    checkTkbConflict(r.group.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb)
+                                    checkGroupConflict(r.group, group)
                             );
 
                             if (!hasConflict) {
-                                hasConflict = courses.some(
-                                    (c) =>
-                                        c.trang_thai_dang_ky === 1 &&
-                                        c.dkmh_tu_dien_hoc_phan_ma !== course.dkmh_tu_dien_hoc_phan_ma &&
-                                        checkTkbConflict(c.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb)
-                                );
+                                hasConflict = courses.some((c) => {
+                                    if (c.trang_thai_dang_ky !== 1 || c.dkmh_tu_dien_hoc_phan_ma === course.dkmh_tu_dien_hoc_phan_ma) {
+                                        return false;
+                                    }
+                                    const registeredGroup = c.data_nhom_hp?.find(
+                                        (g) => g.dkmh_nhom_hoc_phan_ma === c.dkmh_nhom_hoc_phan_ma
+                                    );
+                                    if (registeredGroup) {
+                                        return checkGroupConflict(registeredGroup, group);
+                                    }
+                                    return checkTkbConflict(c.dkmh_tu_dien_lop_hoc_phan_tkb, group.dkmh_tu_dien_lop_hoc_phan_tkb);
+                                });
                             }
 
                             const isOriginal = course.trang_thai_dang_ky === 1 &&
@@ -168,12 +174,6 @@ export default function RegistrationModal({
                                             )}
                                         </div>
                                         <div className="flex flex-wrap gap-y-2 gap-x-4">
-                                            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                                <Clock size={12} />
-                                                <span>
-                                                    {formatTkb(group.dkmh_tu_dien_lop_hoc_phan_tkb)}
-                                                </span>
-                                            </div>
                                             <div className="flex items-center gap-1.5 text-xs text-[#3f6ad8] font-bold">
                                                 <Users size={12} />
                                                 <span>
@@ -209,6 +209,38 @@ export default function RegistrationModal({
                                                     <span>Trùng lịch</span>
                                                 </div>
                                             )}
+                                        </div>
+
+                                        <div className="mt-3 space-y-1.5 border-t border-slate-100/80 pt-2.5">
+                                            {group.data?.map((slot, idx) => {
+                                                const dayLabel = slot.dkmh_thu_trong_tuan_ma === 8 ? "Chủ Nhật" : `Thứ ${slot.dkmh_thu_trong_tuan_ma}`;
+                                                const formattedPeriod = formatPeriods(slot.tiet_hoc);
+                                                const formattedWeeks = formatWeeksRange(slot.tuan_hoc);
+                                                return (
+                                                    <div key={slot.key || idx} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 bg-slate-50/50 rounded-lg px-2.5 py-1.5 border border-slate-100">
+                                                        <div className="font-bold text-[#3f6ad8] min-w-[70px]">
+                                                            {dayLabel}
+                                                        </div>
+                                                        <div className="flex items-center gap-1 text-slate-700">
+                                                            <Clock size={11} className="text-slate-400" />
+                                                            <span className="font-semibold">{formattedPeriod}</span>
+                                                        </div>
+                                                        {slot.dkmh_tu_dien_phong_hoc_ten && (
+                                                            <div className="flex items-center gap-1 text-slate-700">
+                                                                <MapPin size={11} className="text-emerald-500" />
+                                                                <span className="font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px] border border-emerald-100">
+                                                                    {slot.dkmh_tu_dien_phong_hoc_ten}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {formattedWeeks && (
+                                                            <div className="text-[10px] text-slate-400 font-medium ml-auto">
+                                                                Tuần: {formattedWeeks}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                         <div className="mt-2 text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
                                             Mã lớp:{" "}
@@ -258,4 +290,44 @@ export default function RegistrationModal({
             </div>
         </div>
     );
+}
+
+function getClassroomNameForGroup(group: LopHocPhan): string {
+    if (!group?.data) return "Đang cập nhật";
+    const rooms = Array.from(
+        new Set(
+            group.data
+                .map((d) => d.dkmh_tu_dien_phong_hoc_ten?.trim())
+                .filter(Boolean)
+        )
+    );
+    return rooms.length > 0 ? rooms.join(", ") : "Đang cập nhật";
+}
+
+function formatWeeksRange(weeks: number[]): string {
+    if (!weeks || weeks.length === 0) return "";
+    const sorted = [...weeks].sort((a, b) => a - b);
+    const ranges: string[] = [];
+    let start = sorted[0];
+    let end = sorted[0];
+    for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i] === end + 1) {
+            end = sorted[i];
+        } else {
+            ranges.push(start === end ? `${start}` : `${start}-${end}`);
+            start = sorted[i];
+            end = sorted[i];
+        }
+    }
+    ranges.push(start === end ? `${start}` : `${start}-${end}`);
+    return ranges.join(", ");
+}
+
+function formatPeriods(tietHoc: string): string {
+    if (!tietHoc) return "";
+    const periods = parsePeriodsFromString(tietHoc);
+    if (periods.length === 0) return tietHoc;
+    const start = periods[0];
+    const end = periods[periods.length - 1];
+    return start === end ? `Tiết ${start}` : `Tiết ${start}-${end}`;
 }

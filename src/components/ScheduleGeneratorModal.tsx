@@ -3,7 +3,7 @@
 import { useApp } from "@/providers/AppContext";
 import Course from "@/types/Course";
 import LopHocPhan from "@/types/LopHocPhan";
-import { checkTkbConflict, getCourseColor } from "@/util/format";
+import { checkTkbConflict, checkGroupConflict, getCourseColor } from "@/util/format";
 import {
     AlertTriangle,
     BookOpen,
@@ -163,10 +163,7 @@ export default function ScheduleGeneratorModal({
             for (const group of groupsToTry) {
                 // Check conflicts with current combination
                 const hasConflict = currentCombination.some(({ group: selectedGroup }) =>
-                    checkTkbConflict(
-                        selectedGroup.dkmh_tu_dien_lop_hoc_phan_tkb,
-                        group.dkmh_tu_dien_lop_hoc_phan_tkb
-                    )
+                    checkGroupConflict(selectedGroup, group)
                 );
 
                 if (!hasConflict) {

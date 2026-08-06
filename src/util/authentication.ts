@@ -259,7 +259,12 @@ export async function getToken(mssv: string, password: string) {
                 },
             });
     
+            if (res.headers.get("Connection") == "Close") {
+                throw new Error("Hệ thống không thể đăng nhập vào lúc này! (Dính Captcha)");
+            }
+
             const h = res.headers as any;
+
             const setCookies: string[] =
                 typeof h.getSetCookie === "function"
                     ? h.getSetCookie()
@@ -331,10 +336,12 @@ export async function getToken(mssv: string, password: string) {
             const html = readBody ? await res.text().catch(() => "") : (res.body?.cancel(), "");
             return { url, res, html };
         };
-    
+
         const loc = (res: Response, base?: string) => {
             const location = res.headers.get("location");
+
             if (!location) throw new Error("MSSV hoặc mật khẩu sai");
+
             return base && !location.startsWith("http")
                 ? new URL(location, base).href
                 : location;
