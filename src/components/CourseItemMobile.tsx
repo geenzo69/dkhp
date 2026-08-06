@@ -111,6 +111,8 @@ export default function CourseItemMobile({
                             <span className="rounded bg-white px-2 py-1 text-[#3f6ad8] shadow-sm ring-1 ring-blue-100">
                                 Phòng: {getClassroomName(course, registration)}
                             </span>
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-tight">
                             <span className="rounded bg-slate-100 px-2 py-1 text-slate-500">
                                 {getTeacherName(course, registration)}
                             </span>

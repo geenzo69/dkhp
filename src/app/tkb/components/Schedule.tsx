@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, Calendar, Clock, Info, Sparkles } from "lucide-react";
+import { AlertTriangle, Calendar, Clock, Info, Sparkles, MapPin, User } from "lucide-react";
 import { useApp } from "@/providers/AppContext";
 import { getCourseColor } from "@/util/format";
 import ScheduleGeneratorModal from "@/components/ScheduleGeneratorModal";
@@ -29,6 +29,8 @@ interface ParsedSlot {
     color: string;
     isRegistered: boolean;
     courseCode: string;
+    room: string;
+    lecturer: string;
 }
 
 function parseBlocks(
@@ -169,8 +171,16 @@ export default function Schedule() {
         courses
             ?.filter((course) => course.trang_thai_dang_ky === 1 && !plannedCourseIds.has(course.dkmh_tu_dien_hoc_phan_ma))
             .forEach((course) => {
+                const group = course.data_nhom_hp?.find(
+                    (g) => g.dkmh_nhom_hoc_phan_ma === course.dkmh_nhom_hoc_phan_ma
+                );
+
                 parseBlocks(course.dkmh_tu_dien_lop_hoc_phan_tkb).forEach(
                     (block, index) => {
+                        const slot = group?.data?.find(d => Number(d.dkmh_thu_trong_tuan_ma) === Number(block.day));
+                        const room = slot?.dkmh_tu_dien_phong_hoc_ten || "Đang cập nhật";
+                        const lecturer = slot?.gv?.[0]?.dkmh_tu_dien_giang_vien_ten_vn || course.dkmh_tu_dien_giang_vien_ten_vn || "Đang cập nhật";
+
                         list.push({
                             id: `reg-${course.dkmh_tu_dien_hoc_phan_ma}-${index}`,
                             day: block.day,
@@ -182,6 +192,8 @@ export default function Schedule() {
                             color: "bg-slate-600",
                             isRegistered: true,
                             courseCode: course.dkmh_tu_dien_hoc_phan_ma,
+                            room,
+                            lecturer,
                         });
                     },
                 );
@@ -193,6 +205,10 @@ export default function Schedule() {
 
             parseBlocks(group.dkmh_tu_dien_lop_hoc_phan_tkb).forEach(
                 (block, index) => {
+                    const slot = group.data?.find(d => Number(d.dkmh_thu_trong_tuan_ma) === Number(block.day));
+                    const room = slot?.dkmh_tu_dien_phong_hoc_ten || "Đang cập nhật";
+                    const lecturer = slot?.gv?.[0]?.dkmh_tu_dien_giang_vien_ten_vn || course.dkmh_tu_dien_giang_vien_ten_vn || "Đang cập nhật";
+
                     list.push({
                         id: `chosen-${course.dkmh_tu_dien_hoc_phan_ma}-${index}`,
                         day: block.day,
@@ -204,6 +220,8 @@ export default function Schedule() {
                         color,
                         isRegistered: false,
                         courseCode: course.dkmh_tu_dien_hoc_phan_ma,
+                        room,
+                        lecturer,
                     });
                 },
             );
@@ -358,25 +376,14 @@ export default function Schedule() {
                                                                          }
                                                                      </div>
                                                                  )}
-                                                                 <div className="flex items-center gap-1.5 text-[8px] font-black bg-black/10 w-fit px-1.5 py-0.5 rounded backdrop-blur-sm">
-                                                                     <Clock
-                                                                         size={8}
-                                                                     />
-                                                                     {
-                                                                         block.startPeriod
-                                                                     }
-                                                                     -
-                                                                     {
-                                                                         block.endPeriod
-                                                                     }
-                                                                 </div>
-                                                                 <div className="flex items-center gap-1.5 text-[8px] font-black bg-black/10 w-fit px-1.5 py-0.5 rounded backdrop-blur-sm">
-                                                                     <Calendar
-                                                                         size={8}
-                                                                     />
-                                                                     Tuần{" "}
-                                                                     {block.weeks}
-                                                                 </div>
+                                                                  <div className="flex items-center gap-1.5 text-[8px] font-black bg-black/10 w-fit px-1.5 py-0.5 rounded backdrop-blur-sm">
+                                                                      <MapPin size={8} />
+                                                                      {block.room}
+                                                                  </div>
+                                                                  <div className="flex items-center gap-1.5 text-[8px] font-black bg-black/10 w-fit px-1.5 py-0.5 rounded backdrop-blur-sm">
+                                                                      <User size={8} />
+                                                                      {block.lecturer}
+                                                                  </div>
                                                                  {block.isRegistered && (
                                                                      <div className="text-[7px] font-black bg-white/20 text-white w-fit px-1.5 py-0.5 rounded uppercase tracking-tighter">
                                                                          Đã đăng ký
