@@ -74,5 +74,5 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            sudo systemctl restart chatskibidi.service
-            sudo systemctl status chatskibidi.service --no-pager
+            sudo systemctl restart dkhp.service
+            sudo systemctl status dkhp.service --no-pager
