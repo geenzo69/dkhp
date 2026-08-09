@@ -1,4 +1,4 @@
-import { getDKMHToken } from "@/util/authentication";
+import { getDKMHToken, getUser } from "@/util/authentication";
 import User from "@/types/User";
 import { CalendarClock, Info } from "lucide-react";
 import Card from "./Card";
@@ -24,10 +24,10 @@ interface RegistrationTime {
     endTime: string;
 }
 
-export default async function RegistrationSchedule({ user }: { user: User }) {    
+export default async function RegistrationSchedule() {    
     return (
         <Suspense fallback={<RegistrationScheduleSkeleton />}>
-            <RegistrationScheduleContent user={user} />
+            <RegistrationScheduleContent />
         </Suspense>
     );
 }
@@ -49,11 +49,17 @@ function RegistrationScheduleSkeleton() {
     );
 }
 
-async function RegistrationScheduleContent({
-    user
-}: {
-    user: User
-}) {
+async function RegistrationScheduleContent() {
+    let user: User | undefined;
+
+	try {
+		user = await getUser();
+	} catch (err) {};
+
+    if (!user) {
+        return;
+    }
+
     const registrationTime = await getRegistrationTime(user);
 
     return (
