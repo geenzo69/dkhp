@@ -4,9 +4,10 @@ import { getUser } from "./util/authentication";
 
 export async function proxy(request: NextRequest) {
     let user: User | undefined;
+    const authToken = request.cookies.get("auth_token")?.value;
 
     try {
-        user = await getUser();
+        user = await getUser(authToken);
     } catch (err) {}
 
     if (request.nextUrl.pathname == "/") {

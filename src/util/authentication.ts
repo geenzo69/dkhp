@@ -8,10 +8,11 @@ const secret = process.env.DKHP_SECRET || "";
 const authTokenCookieName = "auth_token";
 const dkhpTokenCookieName = "dkhp_token";
 
-export function generateToken(mssv: string, password: string) {    
+export function generateToken(mssv: string, password: string, user?: User) {    
     const authToken = sign({
         mssv: mssv,
-        password: Buffer.from(password).toString("base64")
+        password: Buffer.from(password).toString("base64"),
+        user,
     }, secret, {
         expiresIn: "360d",
         algorithm: "HS256"
@@ -26,7 +27,8 @@ export async function setAuthCookie(
     token: string
 ) {
     const cookieStore = await cookies();
-    const authToken = generateToken(mssv, password);
+    const user = getUserFromDkhpToken(token);
+    const authToken = generateToken(mssv, password, user);
 
     cookieStore.set(authTokenCookieName, authToken, {
         httpOnly: true,
@@ -100,6 +102,12 @@ function getUserFromDkhpToken(dkhpToken: string) {
     return result as User;
 }
 
+export function getDkhpUser(dkhpToken?: string) {
+    if (!isDkhpTokenValid(dkhpToken)) return;
+
+    return getUserFromDkhpToken(dkhpToken);
+}
+
 export async function getSavedCredentials() {
     const cookieStore = await cookies();
     const authToken = cookieStore.get(authTokenCookieName)?.value;
@@ -127,93 +135,31 @@ export async function getSavedCredentials() {
     }
 }
 
-export async function getSavedUser() {
-    const cookieStore = await cookies();
-    const authToken = cookieStore.get(authTokenCookieName)?.value;
-    const dkhpToken = cookieStore.get(dkhpTokenCookieName)?.value;
+export async function getUser(authToken?: string) {
+    let validAuthToken = authToken;
 
-    if (!authToken || !dkhpToken) return;
+    if (!validAuthToken) {
+        const cookieStore = await cookies();
+        validAuthToken ||= cookieStore.get(authTokenCookieName)?.value;
+    }
+
+    if (!validAuthToken) return;
 
     try {
-        verify(authToken, secret, {
+        const payload = verify(validAuthToken, secret, {
             algorithms: ["HS256"],
         }) as JwtPayload;
 
-        if (!isDkhpTokenValid(dkhpToken)) return;
-
-        const decodedToken = decode(dkhpToken) as JwtPayload | null;
-
-        if (!decodedToken || typeof decodedToken.user_info !== "string") {
-            return;
+        if (payload.user && typeof payload.user === "object") {
+            return payload.user as User;
         }
 
-        const buffer = Buffer.from(decodedToken.user_info.trim(), "base64");
-        const decompressed = zlib.inflateSync(buffer);
+        if (typeof payload.mssv !== "string") return;
 
-        return JSON.parse(decompressed.toString("utf-8")) as User;
-    } catch {
-        return;
-    }
-}
-
-export async function getDKMHToken(authToken?: string) {
-    const cookieStore = await cookies();
-    const dkhpToken = cookieStore.get(dkhpTokenCookieName)?.value;
-    
-    if (!authToken && isDkhpTokenValid(dkhpToken)) return dkhpToken;
-
-    if (!authToken) {
-        authToken = cookieStore.get(authTokenCookieName)?.value;
-        if (!authToken) return;
-    }
-
-    const payload = decode(authToken) as JwtPayload;
-
-    if (
-        typeof payload.mssv !== "string" ||
-        typeof payload.password !== "string"
-    ) {
-        return;
-    }
-
-    const password = Buffer.from(payload.password, "base64").toString("utf-8");
-    const token = await getToken(payload.mssv, password);
-
-    return token;
-}
-
-export async function getUser(authToken?: string, dkhpToken?: string) {
-    const cookieStore = await cookies();
-    
-    if (!authToken) {
-        authToken = cookieStore.get(authTokenCookieName)?.value;
-        if (!authToken) return;
-    }
-
-    try {
-        const payload = verify(authToken, secret) as JwtPayload;
-
-        let validDkhpToken = dkhpToken;
-
-        if (!validDkhpToken) {
-            validDkhpToken = cookieStore.get(dkhpTokenCookieName)?.value;
-        }
-
-        if (!isDkhpTokenValid(validDkhpToken)) {
-            if (
-                typeof payload.mssv !== "string" ||
-                typeof payload.password !== "string"
-            ) {
-                return;
-            }
-
-            const password = Buffer.from(payload.password, "base64").toString("utf-8");
-            validDkhpToken = await getToken(payload.mssv, password);
-        }
-
-        if (!isDkhpTokenValid(validDkhpToken)) return;
-
-        return getUserFromDkhpToken(validDkhpToken);
+        return {
+            sys_manguoidung: payload.mssv,
+            sys_hoten: payload.mssv,
+        } as User;
     } catch(err) {
         throw new Error("The token is dead!");
     }

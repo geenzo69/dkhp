@@ -1,4 +1,4 @@
-import { getToken, getUser } from "@/util/authentication";
+import { getDkhpUser, getToken } from "@/util/authentication";
 import { decode, JwtPayload, verify } from "jsonwebtoken";
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
             mssv = tokenData.mssv;
 
             try {
-                user = await getUser(scheduledAuthToken, refreshedDkmhToken);
+                user = getDkhpUser(refreshedDkmhToken);
             } catch {}
 
             if (!user) {
@@ -236,9 +236,9 @@ export async function POST(request: Request) {
         const errorMsg = error.message || "Lỗi máy chủ không xác định";
 
         if (mssv && mssv !== "sinhvien" && registrationData.length > 0) {
-            if (!user && authToken) {
+            if (!user && authToken && dkmhToken) {
                 try {
-                    user = await getUser(authToken);
+                    user = getDkhpUser(dkmhToken);
                 } catch {}
             }
             const failedResults: CourseResult[] = registrationData.map((item) => ({

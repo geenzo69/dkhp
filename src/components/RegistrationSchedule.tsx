@@ -1,4 +1,4 @@
-import { getDKMHToken, getUser } from "@/util/authentication";
+import { getDkhpUser, getValidDkhpToken } from "@/util/authentication";
 import User from "@/types/User";
 import { CalendarClock, Info } from "lucide-react";
 import Card from "./Card";
@@ -51,16 +51,18 @@ function RegistrationScheduleSkeleton() {
 
 async function RegistrationScheduleContent() {
     let user: User | undefined;
+    let dkmhToken: string | undefined;
 
 	try {
-		user = await getUser();
+        dkmhToken = await getValidDkhpToken();
+		user = getDkhpUser(dkmhToken);
 	} catch (err) {};
 
     if (!user) {
         return;
     }
 
-    const registrationTime = await getRegistrationTime(user);
+    const registrationTime = await getRegistrationTime(user, dkmhToken);
 
     return (
         <Card title="Thời điểm đăng ký học phần" icon={CalendarClock} color="#3f6ad8">
@@ -98,9 +100,8 @@ async function RegistrationScheduleContent() {
     );
 }
 
-async function getRegistrationTime(user: User): Promise<RegistrationTime | undefined> {
+async function getRegistrationTime(user: User, dkmhToken?: string): Promise<RegistrationTime | undefined> {
     try {
-        const dkmhToken = await getDKMHToken();
         if (!dkmhToken) return;
 
         const response = await fetch(

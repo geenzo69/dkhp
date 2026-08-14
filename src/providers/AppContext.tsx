@@ -14,6 +14,7 @@ import LopHocPhan from "@/types/LopHocPhan";
 import User from "@/types/User";
 import getCurrentUser from "@/app/actions/getUser";
 import getCourses from "@/app/actions/getCourses";
+import { usePathname } from "next/navigation";
 
 interface Log {
     id: number;
@@ -43,6 +44,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+    const pathname = usePathname();
     const [logs, setLogs] = useState<Log[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
     const [plannedCourses, setPlannedCourses] = useState<
@@ -197,8 +199,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
+        setIsLoadingCourses(true);
         executeGetCurrentUser();
-    }, []);
+    }, [pathname]);
 
     useEffect(() => {
         if (user) {

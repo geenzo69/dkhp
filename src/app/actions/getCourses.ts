@@ -2,7 +2,7 @@
 
 import Course from "@/types/Course";
 import action from "@/util/safe-action";
-import { getUser, getValidDkhpToken } from "@/util/authentication";
+import { getDkhpUser, getValidDkhpToken } from "@/util/authentication";
 
 const getCourses = action.action(async () => {
     const dkmhToken = await getValidDkhpToken();
@@ -11,7 +11,7 @@ const getCourses = action.action(async () => {
         throw new Error("Bạn phải đăng nhập!");
     }
 
-    const user = await getUser(undefined, dkmhToken);
+    const user = getDkhpUser(dkmhToken);
 
     if (!user) {
         throw new Error("Bạn phải đăng nhập!");

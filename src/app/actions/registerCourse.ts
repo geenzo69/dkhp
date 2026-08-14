@@ -1,6 +1,6 @@
 "use server";
 
-import { getUser, getValidDkhpToken } from "@/util/authentication";
+import { getDkhpUser, getValidDkhpToken } from "@/util/authentication";
 import action from "@/util/safe-action";
 import z from "zod";
 
@@ -15,7 +15,7 @@ const registerCourse = action.inputSchema(z.array(z.object({
         throw new Error("Bạn phải đăng nhập!");
     }
 
-    const user = await getUser(undefined, dkmhToken);
+    const user = getDkhpUser(dkmhToken);
 
     if (!user) {
         throw new Error("Bạn phải đăng nhập!");
